@@ -13,6 +13,9 @@
     <EmbeddedResource Update="Resources\StringsText.ja-JP.resx">
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Update="Resources\StringsText.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Update="Emuera\Forms\ConfigDialog.resx">
