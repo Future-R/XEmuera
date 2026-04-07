@@ -22,6 +22,7 @@ using Xamarin.Forms;
 using XEmuera.Drawing;
 using EvilMask.Emuera;
 using XEmuera.Forms;
+using MinorShift.Emuera.GameProc.Function;
 
 namespace MinorShift.Emuera
 {
@@ -662,6 +663,7 @@ namespace MinorShift.Emuera
 			MainThread.BeginInvokeOnMainThread(() =>
 			{
 				console.forceStopTimer();
+				FunctionIdentifier.StopAllAudio();
 				Program.Reboot = true;
 				Close();
 			});
@@ -673,6 +675,7 @@ namespace MinorShift.Emuera
                 return;
 			Task.Run(() =>
 			{
+				FunctionIdentifier.StopAllAudio();
 				console.GotoTitle();
 				console.ClearQuickButton();
 				console.RefreshQuickButton();

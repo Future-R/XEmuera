@@ -1884,6 +1884,34 @@ namespace MinorShift.Emuera.GameProc.Function
 		// fix later
 		static IPlayer[] sound = new IPlayer[10];
 		static IPlayer bgm = null;
+
+		internal static void StopAllAudio()
+		{
+			for (int i = 0; i < sound.Length; i++)
+			{
+				if (sound[i] == null)
+					continue;
+				try
+				{
+					sound[i].Stop();
+				}
+				catch
+				{
+				}
+			}
+
+			if (bgm == null)
+				return;
+
+			try
+			{
+				bgm.Stop();
+			}
+			catch
+			{
+			}
+		}
+
 		private sealed class PLAYSOUND_Instruction : AbstractInstruction
 		{
 

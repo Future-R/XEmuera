@@ -18,6 +18,7 @@ using XEmuera.Views;
 using XEmuera.Resources;
 using System.Timers;
 using XEmuera.Models;
+using MinorShift.Emuera.GameProc.Function;
 
 namespace MinorShift.Emuera
 {
@@ -244,6 +245,7 @@ namespace MinorShift.Emuera
 			{
 				//if (Config.UseKeyMacro)
 				//	KeyMacro.SaveMacro();
+				FunctionIdentifier.StopAllAudio();
 				if (console != null)
 				{
 					console.Quit();
