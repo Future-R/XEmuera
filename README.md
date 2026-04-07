@@ -1,29 +1,78 @@
-## XEmuera
-XEmuera是一款使用[Xamarin.Forms](https://dotnet.microsoft.com/apps/xamarin)构建的安卓软件。软件移植自一款名为[Emuera](https://osdn.net/projects/emuera)、来自Windows平台的文字游戏引擎。
+# XEmuera-R
 
-当前使用的Emuera内核版本为[Emuera1824+v15 私家改造版](https://ux.getuploader.com/ninnohito/index)。本项目在该版本基础上删改了大部分仅能在Windows上使用的功能，且整体运行效率不如Windows平台。
+`XEmuera-R` 是一个基于 `Xamarin.Forms` 的安卓版 Emuera 解释器分支。
 
-当前项目处在不稳定的开发阶段，软件使用时可能会遇到不同程度的问题。
+项目地址：
 
-## 使用 & 注意
-- 初次启动软件的时间较长（6-8秒），请耐心等待。
-- 游戏本体放置在存储根目录的emuera文件夹下。
-- 游戏本体要求存在 `CSV` 和 `ERB` 文件夹。
-- 软件支持添加外部字体，字体文件放置在存储根目录的emuera/fonts文件夹下，格式要求为 `*.ttf` 。
-- 软件已内置 `MS Gothic` 和 `Microsoft YaHei` 字体。
-- 安卓10及以上需要授予文件管理权限。
-- 从屏幕最左侧向右滑动可打开侧拉菜单。
-- 修改游戏配置后需要重新加载游戏才能生效。
+- https://github.com/Future-R/XEmuera
 
-## 下载
-https://github.com/Fegelein21/XEmuera/releases
+## 简介
 
-## 目前存在问题
-- 尚未规范本地化翻译。
-- 窘于个人技术力，未能实现真正意义上的纵向滑动条。
-- 字体的加粗倾斜等可能与字体真正的行为不符
+本项目源自 `XEmuera`，底层解释器内核来自 `Emuera1824+v15` 私家改造版，并在此基础上持续做 Android 可用性和 `EE+EM` 版新特性的兼容修复。
 
-## 支持作者
-https://afdian.net/@fegelein21
+这个分支相较于之前的XEmuera，主要改动包括：
 
-![](https://img1.imgtp.com/2022/06/28/i6DiqbMT.jpg)
+- 可从游戏目录下 `font` / `fonts` 加载外部字体
+-  `HTML_PRINT` 兼容修正
+- 音频相关支持
+- `UTF-8 / UTF-8 BOM / Shift-JIS` 脚本与资源文本自动识别
+- 解释器日志查看、刷新、复制
+
+## 使用说明
+
+- 首次启动时间可能较长，请耐心等待。
+- 游戏目录放在存储根目录下的 `emuera` 文件夹内。
+- 每个游戏目录至少需要有 `ERB` 和 `CSV` 文件夹。
+- 外部字体可放在游戏目录下的 `font` 或 `fonts` 文件夹中，支持 `*.ttf` / `*.otf`。
+- 当前内置字体包含 `MS Gothic` 和 `Microsoft YaHei`。
+- Android 10 及以上通常需要授予文件管理权限。
+- 从屏幕左侧向右滑动可以打开侧边菜单。
+- 解释器报错后，可以在侧边菜单里打开 `解释器日志` 页面并直接复制日志内容。
+
+目录示例：
+
+```text
+/storage/emulated/0/emuera/
+  era萝乐娜/
+    CSV/
+    ERB/
+    font/
+    resources/
+    sound/
+```
+
+## 构建与打包
+
+仓库内已经提供了可直接使用的脚本：
+
+- `build-android.ps1`
+  作用：调用 Visual Studio 自带的 `MSBuild.exe` 构建 Android 工程
+- `package-android.ps1`
+  作用：执行 `SignAndroidPackage`，并把最新签名 APK 复制到统一产物目录
+
+常用命令：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-android.ps1
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\package-android.ps1
+```
+
+默认打包产物位置：
+
+- `artifacts/android/XEmuera-android-Release.apk`
+
+## 已知问题
+
+- 项目仍基于较旧的 Xamarin.Android / Xamarin.Forms 技术栈。
+- 仍有部分 Emuera / EvilMask 文案没有完全中文化。
+- `HTML_PRINT` 兼容尚未完全追平桌面版。
+- 某些字体的加粗、斜体、字形回退和桌面版可能仍有差异。
+- 构建时会看到 `SkiaSharp 2.88.0` 的已知漏洞警告；当前保留该版本是为了和旧 Xamarin.Android 打包链保持兼容。
+
+## 关于
+
+- 改版作者：未来
+- 原作者：Fegelein21
