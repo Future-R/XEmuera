@@ -21,7 +21,7 @@ namespace XEmuera.Views
 		{
 			InitializeComponent();
 
-			CodeGroups = groups;
+			CodeGroups = groups ?? new List<ConfigModel.ConfigCodeGroup>();
 
 			Settings.Clear();
 

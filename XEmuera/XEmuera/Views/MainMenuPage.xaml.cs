@@ -8,6 +8,7 @@ using System.Text;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using XEmuera.Resources;
+using XEmuera.Forms;
 
 namespace XEmuera.Views
 {
@@ -26,6 +27,8 @@ namespace XEmuera.Views
 			GameUtils.EmueraSwitched -= RefreshMainMenuListView;
 			GameUtils.EmueraSwitched += RefreshMainMenuListView;
 			GameUtils.EmueraSwitched += CheckGameReboot;
+
+			RefreshMainMenuListView();
 		}
 
 		private void CheckGameReboot()
@@ -62,6 +65,15 @@ namespace XEmuera.Views
 				Title = StringsText.Settings,
 				Value = nameof(SettingsPage),
 			});
+
+			if (!string.IsNullOrWhiteSpace(GameUtils.CurrentGamePath) || GameUtils.HasPreferences(GameUtils.PrefKeyLastGamePath))
+			{
+				MenuList.Add(new MainMenuItem
+				{
+					Title = "解释器日志",
+					Value = "InterpreterLog",
+				});
+			}
 		}
 
 		private async void MainMenuListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
@@ -76,6 +88,32 @@ namespace XEmuera.Views
 				case nameof(SettingsPage):
 					await GameUtils.MainPage.Detail.Navigation.PushAsync(new SettingsPage());
 					break;
+				case "InterpreterLog":
+					{
+						string gamePath = GameUtils.CurrentGamePath;
+						if (string.IsNullOrWhiteSpace(gamePath))
+							gamePath = GameUtils.GetPreferences(GameUtils.PrefKeyLastGamePath, null);
+
+						if (string.IsNullOrWhiteSpace(gamePath))
+						{
+							MessageBox.Show("当前没有可用的日志路径。", "Interpreter Log");
+							break;
+						}
+
+						string logPath = System.IO.Path.Combine(gamePath, "emuera.log");
+						if (!System.IO.File.Exists(logPath))
+						{
+							MessageBox.Show("还没有生成 emuera.log。", "Interpreter Log");
+							break;
+						}
+
+						var page = new TxtFilePage(() => System.IO.File.ReadAllText(logPath, EncodingHelper.DetectEncoding(logPath)))
+						{
+							Title = "Interpreter Log"
+						};
+						await GameUtils.MainPage.Detail.Navigation.PushAsync(page);
+						break;
+					}
 				case nameof(StringsText.Reboot):
 					if (GameUtils.IsEmueraPage)
 						GlobalStatic.MainWindow.MainMenu_Reboot();

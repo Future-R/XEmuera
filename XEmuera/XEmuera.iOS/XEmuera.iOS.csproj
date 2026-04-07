@@ -125,16 +125,62 @@
     <Reference Include="System.Numerics.Vectors" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SkiaSharp">
-      <Version>3.116.1</Version>
-    </PackageReference>
+    <PackageReference Include="SkiaSharp" Version="2.88.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.iOS" Version="2.88.0" />
     <PackageReference Include="Xamarin.CommunityToolkit">
       <Version>2.0.2</Version>
     </PackageReference>
     <PackageReference Include="Xamarin.Forms" Version="[5.0.0.2478]" />
     <PackageReference Include="Xamarin.Essentials" Version="1.7.3" />
   </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
+  <Choose>
+    <When Condition="Exists('$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Community\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Community\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Professional\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Professional\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Preview\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Preview\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Community\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Community\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Professional\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Professional\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Enterprise\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Enterprise\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Preview\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets')">
+      <PropertyGroup>
+        <XamariniOSTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Preview\MSBuild\Xamarin\iOS\Xamarin.iOS.CSharp.targets</XamariniOSTargetsPath>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <Import Project="$(XamariniOSTargetsPath)" Condition="'$(XamariniOSTargetsPath)' != ''" />
   <ItemGroup>
     <ProjectReference Include="..\XEmuera\XEmuera.csproj">
       <Project>{511DBD2B-6E0E-43A5-B101-A02D3E5FC005}</Project>

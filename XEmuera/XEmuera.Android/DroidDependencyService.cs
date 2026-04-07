@@ -116,8 +116,8 @@ namespace XEmuera.Droid
 			}
 			set
 			{
-				_volume = value;
-				MediaPlayer.SetVolume(Volume, Volume);
+				_volume = Math.Max(0f, Math.Min(100f, value));
+				ApplyVolume();
 			}
 		}
 		public bool Looping
@@ -145,18 +145,28 @@ namespace XEmuera.Droid
 		{
 			MediaPlayer.Reset();
 			MediaPlayer.SetDataSource(filepath);
+			ApplyVolume();
 		}
 
 		public void Play()
 		{
 			MediaPlayer.Prepare();
+			MediaPlayer.Looping = Looping;
 			MediaPlayer.Start();
-			MediaPlayer.SetVolume(Volume, Volume);
+			ApplyVolume();
 		}
 
 		public void Stop()
 		{
+			if (!MediaPlayer.IsPlaying)
+				return;
 			MediaPlayer.Stop();
+		}
+
+		private void ApplyVolume()
+		{
+			float normalizedVolume = _volume / 100f;
+			MediaPlayer.SetVolume(normalizedVolume, normalizedVolume);
 		}
 	}
 }

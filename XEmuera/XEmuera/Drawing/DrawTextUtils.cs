@@ -78,31 +78,44 @@ namespace XEmuera.Drawing
 			};
 		}
 
-		public static void DrawText(SKCanvas canvas, string text, Font font, RectangleF rect, Color color)
+		private static void EnsurePaint()
 		{
-			DrawText(canvas, text, font, rect.X, rect.Y, color);
+			if (Paint == null)
+				Reset();
 		}
 
-		public static void DrawText(SKCanvas canvas, string text, Font font, float x, float y, Color color)
+		private static void ApplyFont(Font font)
 		{
-			if (string.IsNullOrEmpty(text))
-				return;
-
+			EnsurePaint();
 			Paint.Typeface = font.FontModel.Typeface;
 			Paint.TextSize = font.Size;
 			Paint.FakeBoldText = font.Style.HasFlag(FontStyle.Bold);
 			Paint.TextSkewX = font.Style.HasFlag(FontStyle.Italic) ? -0.4f : 0;
-			Paint.Color = DisplayUtils.ToSKColor(color);
+		}
+
+		private static bool PrepareTextLayout(string text, Font font, out float totalAdvance)
+		{
+			totalAdvance = 0;
+			if (string.IsNullOrEmpty(text))
+				return false;
+
+			ApplyFont(font);
 
 			CharList = text.ToCharArray();
 			CharRemain = CharList.Length;
 			TextUnits = new TextUnit[CharRemain];
+			if (FontCaches.Count == 0)
+				return false;
+
 			UserCache = Paint.Typeface == null
-				? FontCaches[0] : FontCaches.FirstOrDefault(item => item.FontModel.Typeface == Paint.Typeface);
+				? FontCaches[0]
+				: FontCaches.FirstOrDefault(item => item.FontModel.Typeface == Paint.Typeface) ?? FontCaches[0];
 
-			//------------------------------------
-
-			List<FontCache> fontCache = new List<FontCache>(EnabledFontCaches);
+			List<FontCache> fontCache;
+			if (EnabledFontCaches.Count > 0)
+				fontCache = new List<FontCache>(EnabledFontCaches);
+			else
+				fontCache = new List<FontCache>(FontCaches);
 			fontCache.Remove(UserCache);
 			fontCache.Insert(0, UserCache);
 
@@ -118,11 +131,8 @@ namespace XEmuera.Drawing
 					break;
 			}
 
-			//没有任何字可以绘制的大失败情况
 			if (CharRemain == CharList.Length)
-				return;
-
-			//------------------------------------
+				return false;
 
 			for (int i = TextUnits.Length - 2; i >= 0; i--)
 			{
@@ -144,7 +154,35 @@ namespace XEmuera.Drawing
 				TextUnits[i + 1] = null;
 			}
 
-			//------------------------------------
+			for (int i = 0; i < TextUnits.Length; i++)
+			{
+				if (TextUnits[i] == null)
+					continue;
+				totalAdvance += TextUnits[i].Advance;
+			}
+
+			return true;
+		}
+
+		public static float MeasureText(string text, Font font)
+		{
+			return PrepareTextLayout(text, font, out float totalAdvance) ? totalAdvance : 0;
+		}
+
+		public static void DrawText(SKCanvas canvas, string text, Font font, RectangleF rect, Color color)
+		{
+			DrawText(canvas, text, font, rect.X, rect.Y, color);
+		}
+
+		public static void DrawText(SKCanvas canvas, string text, Font font, float x, float y, Color color)
+		{
+			if (string.IsNullOrEmpty(text))
+				return;
+
+			if (!PrepareTextLayout(text, font, out _))
+				return;
+
+			Paint.Color = DisplayUtils.ToSKColor(color);
 
 			bool drawStrikeout = font.Style.HasFlag(FontStyle.Strikeout);
 			bool drawUnderline = font.Style.HasFlag(FontStyle.Underline);

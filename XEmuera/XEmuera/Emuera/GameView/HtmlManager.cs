@@ -80,10 +80,13 @@ namespace MinorShift.Emuera.GameView
 			Stack<HTMLI> beginStack = new Stack<HTMLI>(), endStack = new Stack<HTMLI>();
 
 			length = length * Config.FontSize / 2;
-
+			str = Unescape(str);
 			int found = -1, last = 0, delbr = 0;
+			bool content = false;
 			while (true)
 			{
+				string tstr;
+				int tmp;
 				found = str.IndexOf('<', last);
 				if (found != last)
 				{
@@ -93,14 +96,13 @@ namespace MinorShift.Emuera.GameView
 					while (arr.Count > 0)
 						if (arr.Peek().isStyleTag) suff += arr.Pop().tag;
 						else arr.Pop();
-					int tmp;
-					string tstr;
 					if (found < 0)
 						tstr = str.Substring(last, str.Length - last);
 					else
 						tstr = str.Substring(last, found - last);
 					tmp = GetSubStr(pref, suff, tstr, ref length);
 					last += tmp + 1;
+					content = true;
 					if (found < 0 || tmp < tstr.Length) break;
 				}
 				else last++;
@@ -116,10 +118,26 @@ namespace MinorShift.Emuera.GameView
 					int fspace = str.IndexOf(' ', last, found - last);
 					if (fspace < 0) fspace = found;
 					string tag = str.Substring(last, fspace - last);
-					if (tag == "br") { delbr = 1; break; }
-					bool ist = (tag == "b" || tag == "i" || tag == "s");
-					beginStack.Push(new HTMLI('<' + str.Substring(last, found - last) + '>', ist));
-					endStack.Push(new HTMLI("</" + tag + '>', ist));
+					if (tag == "br")
+					{
+						delbr = 1;
+						break;
+					}
+					if (tag == "img" || tag == "shape")
+					{
+						int pos = last - 1;
+						tstr = str.Substring(pos, found - pos + 1);
+						tmp = HtmlLength(tstr);
+						length -= tmp;
+						if (length < 0 && content)
+							break;
+					}
+					else
+					{
+						bool ist = (tag == "b" || tag == "i" || tag == "s");
+						beginStack.Push(new HTMLI('<' + str.Substring(last, found - last) + '>', ist));
+						endStack.Push(new HTMLI("</" + tag + '>', ist));
+					}
 				}
 				last = found + 1;
 			}
@@ -213,6 +231,174 @@ namespace MinorShift.Emuera.GameView
 				}
 				return new StringStyle(c, colorChanged, b, FontStyle, fontname);
 			}
+		}
+
+		private static void ParseMixedNum(ref MixedNum num, string tag, string word, string attrValue)
+		{
+			if (num == null)
+				num = new MixedNum();
+			else
+				throw new CodeEE(string.Format(trerror.DuplicateAttribute.Text, tag, word));
+
+			if (attrValue.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+			{
+				if (!int.TryParse(attrValue.Substring(0, attrValue.Length - 2), out num.num))
+					throw new CodeEE(string.Format(trerror.AttributeCanNotInterpretNum.Text, tag, word));
+				num.isPx = true;
+			}
+			else if (!int.TryParse(attrValue, out num.num))
+			{
+				throw new CodeEE(string.Format(trerror.AttributeCanNotInterpretNum.Text, tag, word));
+			}
+		}
+
+		private static bool IsTagTokenAt(string source, int position, string tagToken)
+		{
+			if (position < 0 || position + tagToken.Length > source.Length)
+				return false;
+			if (!source.Substring(position, tagToken.Length).Equals(tagToken, StringComparison.OrdinalIgnoreCase))
+				return false;
+			int next = position + tagToken.Length;
+			return next >= source.Length || char.IsWhiteSpace(source[next]) || source[next] == '>' || source[next] == '/';
+		}
+
+		private static int FindMatchingCloseTag(string source, int searchStart, string tagName)
+		{
+			int depth = 1;
+			int index = searchStart;
+			while (index < source.Length)
+			{
+				int found = source.IndexOf('<', index);
+				if (found < 0)
+					return -1;
+
+				if (found + 4 <= source.Length && source.Substring(found, 4) == "<!--")
+				{
+					int commentEnd = source.IndexOf("-->", found + 4, StringComparison.Ordinal);
+					if (commentEnd < 0)
+						return -1;
+					index = commentEnd + 3;
+					continue;
+				}
+
+				if (found + 2 + tagName.Length <= source.Length && source[found + 1] == '/' && IsTagTokenAt(source, found + 2, tagName))
+				{
+					depth--;
+					if (depth == 0)
+						return found;
+					index = found + 2 + tagName.Length;
+					continue;
+				}
+
+				if (found + 1 + tagName.Length <= source.Length && IsTagTokenAt(source, found + 1, tagName))
+				{
+					depth++;
+					index = found + 1 + tagName.Length;
+					continue;
+				}
+
+				index = found + 1;
+			}
+			return -1;
+		}
+
+		private static ConsoleDivPart CreateDivPart(string tag, WordCollection wc, StringStream st, StringMeasure sm, EmueraConsole console)
+		{
+			if (wc == null)
+				throw new CodeEE(string.Format(trerror.TagHasNotAttribute.Text, tag));
+
+			MixedNum x = null;
+			MixedNum y = null;
+			MixedNum width = null;
+			MixedNum height = null;
+			bool isRelative = true;
+			int color = -1;
+
+			while (wc != null && !wc.EOL)
+			{
+				IdentifierWord word = wc.Current as IdentifierWord;
+				wc.ShiftNext();
+				OperatorWord op = wc.Current as OperatorWord;
+				wc.ShiftNext();
+				LiteralStringWord attr = wc.Current as LiteralStringWord;
+				wc.ShiftNext();
+				if (word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
+					throw new CodeEE(string.Format(trerror.HtmlTagError.Text, st.RowString));
+
+				string attrValue = Unescape(attr.Str);
+				if (word.Code.Equals("height", StringComparison.OrdinalIgnoreCase))
+				{
+					ParseMixedNum(ref height, tag, word.Code, attrValue);
+				}
+				else if (word.Code.Equals("width", StringComparison.OrdinalIgnoreCase))
+				{
+					ParseMixedNum(ref width, tag, word.Code, attrValue);
+				}
+				else if (word.Code.Equals("ypos", StringComparison.OrdinalIgnoreCase))
+				{
+					ParseMixedNum(ref y, tag, word.Code, attrValue);
+				}
+				else if (word.Code.Equals("xpos", StringComparison.OrdinalIgnoreCase))
+				{
+					ParseMixedNum(ref x, tag, word.Code, attrValue);
+				}
+				else if (word.Code.Equals("display", StringComparison.OrdinalIgnoreCase))
+				{
+					if (attrValue.Equals("absolute", StringComparison.OrdinalIgnoreCase))
+						isRelative = false;
+					else if (attrValue.Equals("relative", StringComparison.OrdinalIgnoreCase))
+						isRelative = true;
+					else
+						throw new CodeEE(string.Format(trerror.CanNotInterpretAttribute.Text, attrValue));
+				}
+				else if (word.Code.Equals("color", StringComparison.OrdinalIgnoreCase))
+				{
+					if (color >= 0)
+						throw new CodeEE(string.Format(trerror.DuplicateAttribute.Text, tag, word.Code));
+					color = stringToColorInt32(attrValue);
+				}
+				else if (word.Code.Equals("size", StringComparison.OrdinalIgnoreCase))
+				{
+					string[] tokens = attrValue.Split(',');
+					if (tokens.Length != 2)
+						throw new CodeEE(string.Format(trerror.CanNotInterpretAttribute.Text, attrValue));
+					ParseMixedNum(ref width, tag, "width", tokens[0].Trim());
+					ParseMixedNum(ref height, tag, "height", tokens[1].Trim());
+				}
+				else if (word.Code.Equals("rect", StringComparison.OrdinalIgnoreCase))
+				{
+					string[] tokens = attrValue.Split(',');
+					if (tokens.Length != 4)
+						throw new CodeEE(string.Format(trerror.CanNotInterpretAttribute.Text, attrValue));
+					ParseMixedNum(ref x, tag, "xpos", tokens[0].Trim());
+					ParseMixedNum(ref y, tag, "ypos", tokens[1].Trim());
+					ParseMixedNum(ref width, tag, "width", tokens[2].Trim());
+					ParseMixedNum(ref height, tag, "height", tokens[3].Trim());
+				}
+				else
+				{
+					throw new CodeEE(string.Format(trerror.CanNotInterpretAttributeName.Text, tag, word.Code));
+				}
+			}
+
+			if (width == null)
+				throw new CodeEE(string.Format(trerror.NotSetAttribute.Text, tag, "width"));
+			if (height == null)
+				throw new CodeEE(string.Format(trerror.NotSetAttribute.Text, tag, "height"));
+
+			int innerStart = st.CurrentPosition + 1;
+			int closeTagStart = FindMatchingCloseTag(st.RowString, innerStart, "div");
+			if (closeTagStart < 0)
+				throw new CodeEE(trerror.NotFoundCloseTag.Text);
+			int closeTagEnd = st.RowString.IndexOf('>', closeTagStart);
+			if (closeTagEnd < 0)
+				throw new CodeEE(trerror.NotFoundTerminateTag.Text);
+
+			string innerHtml = st.Substring(innerStart, closeTagStart - innerStart);
+			ConsoleDisplayLine[] childLines = Html2DisplayLine(innerHtml, sm, console);
+			st.CurrentPosition = closeTagEnd;
+
+			return new ConsoleDivPart(x, y, width, height, color, isRelative, childLines);
 		}
 
 		/// <summary>
@@ -417,7 +603,7 @@ namespace MinorShift.Emuera.GameView
 				else//タグ解析
 				{
 					st.ShiftNext();
-					AConsoleDisplayPart part = tagAnalyze(state, st);
+					AConsoleDisplayPart part = tagAnalyze(state, st, sm, console);
 					if (st.Current != '>')
 						throw new CodeEE(trerror.NotFoundTerminateTag.Text);
 					if (part != null)
@@ -680,7 +866,7 @@ namespace MinorShift.Emuera.GameView
 			return b.ToString();
 		}
 
-		private static AConsoleDisplayPart tagAnalyze(HtmlAnalzeState state, StringStream st)
+		private static AConsoleDisplayPart tagAnalyze(HtmlAnalzeState state, StringStream st, StringMeasure sm, EmueraConsole console)
 		{
 			bool endTag = (st.Current == '/');
 			string tag;
@@ -741,6 +927,8 @@ namespace MinorShift.Emuera.GameView
 						state.FlagClearButtonTooltip = false;
 						return null;
 					#endregion
+					case "div":
+						throw new CodeEE(string.Format(trerror.UnexpectedCloseTag.Text, "div"));
 					default:
 						throw new CodeEE(string.Format(trerror.CanNotInterpretCloseTag.Text, tag));
 				}
@@ -918,6 +1106,8 @@ namespace MinorShift.Emuera.GameView
 							throw new CodeEE(string.Format(trerror.NotSetAttribute.Text, tag, "src"));
 						return new ConsoleImagePart(src, srcb, height, width, ypos);
 					}
+				case "div":
+					return CreateDivPart(tag, wc, st, sm, console);
 
 				case "shape":
 					{

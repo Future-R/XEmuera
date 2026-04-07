@@ -87,9 +87,8 @@
     <Reference Include="System.Numerics.Vectors" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SkiaSharp">
-      <Version>3.116.1</Version>
-    </PackageReference>
+    <PackageReference Include="SkiaSharp" Version="2.88.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Android" Version="2.88.0" />
     <PackageReference Include="Xamarin.CommunityToolkit">
       <Version>2.0.2</Version>
     </PackageReference>
@@ -133,5 +132,52 @@
       <Name>XEmuera</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
+  <Choose>
+    <When Condition="Exists('$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Community\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Community\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Professional\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Professional\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Preview\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\2022\Preview\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Community\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Community\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Professional\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Professional\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Enterprise\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Enterprise\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\18\Preview\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets')">
+      <PropertyGroup>
+        <XamarinAndroidTargetsPath>$(ProgramFiles)\Microsoft Visual Studio\18\Preview\MSBuild\Xamarin\Android\Xamarin.Android.CSharp.targets</XamarinAndroidTargetsPath>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <Import Project="$(XamarinAndroidTargetsPath)" Condition="'$(XamarinAndroidTargetsPath)' != ''" />
 </Project>

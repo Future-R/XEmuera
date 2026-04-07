@@ -24,6 +24,8 @@ namespace XEmuera
 
 		public const int FileSelectorRequestCode = 101;
 
+		public const string PrefKeyLastGamePath = nameof(PrefKeyLastGamePath);
+
 		private static bool Init;
 
 		public static MainPage MainPage { get; set; }
@@ -57,6 +59,8 @@ namespace XEmuera
 
 		public static Action EmueraSwitched { get; set; }
 
+		public static Action LoadCompleted { get; set; }
+
 		public static PermissionStatus StorageAccess { get; set; }
 
 		public static void Load()
@@ -85,6 +89,8 @@ namespace XEmuera
 			IsEmueraPage = false;
 
 			Init = true;
+
+			MainThread.BeginInvokeOnMainThread(() => LoadCompleted?.Invoke());
 		}
 
 		public static void StartEmuera(string gamePath)
@@ -93,17 +99,30 @@ namespace XEmuera
 				return;
 
 			CurrentGamePath = gamePath;
+			SetPreferences(PrefKeyLastGamePath, gamePath);
 
 			StartEmuera();
 		}
 
 		public static void StartEmuera()
 		{
-			var mainWindow = MainWindow.Load();
-			if (mainWindow != null)
+			try
 			{
-				IsEmueraPage = true;
-				MainPage.Detail.Navigation.PushAsync(mainWindow, false);
+				FontModel.LoadCurrentGameFonts();
+
+				var mainWindow = MainWindow.Load();
+				if (mainWindow == null)
+					return;
+
+				MainThread.BeginInvokeOnMainThread(() =>
+				{
+					IsEmueraPage = true;
+					MainPage.Detail.Navigation.PushAsync(mainWindow, false);
+				});
+			}
+			catch (Exception e)
+			{
+				XEmuera.Forms.MessageBox.Show(e.ToString(), "StartEmuera");
 			}
 		}
 

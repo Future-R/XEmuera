@@ -97,7 +97,7 @@ namespace MinorShift.Emuera.GameView
 			forceTextBoxColor = true;
 			//REDRAWされない場合はTextBoxの色は変えずにフラグだけ立てる
 			//最初の再描画時に現在の背景色に合わせる
-			if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
+			if (redraw == ConsoleRedraw.None && !IsBackLogActive())
 				return;
 			uint sec = WinmmTimer.TickCount - lastBgColorChange;
 			//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする

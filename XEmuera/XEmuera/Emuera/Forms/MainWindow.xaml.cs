@@ -111,8 +111,17 @@ namespace MinorShift.Emuera
 		public static MainWindow Load()
 		{
 			LoadSuccess = true;
-			var mainWindow = new MainWindow();
-			return LoadSuccess ? mainWindow : null;
+			try
+			{
+				var mainWindow = new MainWindow();
+				return LoadSuccess ? mainWindow : null;
+			}
+			catch (Exception e)
+			{
+				LoadSuccess = false;
+				MessageBox.Show(e.ToString(), "MainWindow.Load");
+				return null;
+			}
 		}
 
 		private double ScaledWindowX;

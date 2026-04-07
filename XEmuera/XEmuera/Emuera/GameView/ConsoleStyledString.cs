@@ -79,8 +79,8 @@ namespace MinorShift.Emuera.GameView
 				Width = 0;
 				return;
 			}
-			Width = sm.GetDisplayLength(Str, Font);
-			XsubPixel = subPixel;
+			Width = sm.GetDisplayLength(Str, Font, subPixel, out float nextSubPixel);
+			XsubPixel = nextSubPixel;
 		}
 
 		public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode)

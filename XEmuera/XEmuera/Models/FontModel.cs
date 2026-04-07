@@ -13,6 +13,16 @@ namespace XEmuera.Models
 {
 	public class FontModel : INotifyPropertyChanged
 	{
+		private static readonly string[] ExternalFontExtensions = new[] { "*.ttf", "*.otf" };
+
+		private static readonly string[] ExternalFontDirectoryNames = new[] { "font", "fonts" };
+
+		private static readonly Dictionary<string, string[]> KnownExternalFontAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+		{
+			["EraMonoSC"] = new[] { "等距时代黑体 SC", "等距时代黑体SC", "EraMonoSC" },
+			["EraPixel"] = new[] { "eraPixel", "EraPixel" },
+		};
+
 		public event PropertyChangedEventHandler PropertyChanged;
 
 		private static bool Init;
@@ -31,7 +41,9 @@ namespace XEmuera.Models
 
 		public static FontGroup DisabledList;
 
-		private static readonly Dictionary<string, FontModel> AllModels = new Dictionary<string, FontModel>();
+		private static readonly Dictionary<string, FontModel> AllModels = new Dictionary<string, FontModel>(StringComparer.OrdinalIgnoreCase);
+
+		private static readonly Dictionary<string, string> FontAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 		public static FontModel Default { get; private set; }
 
@@ -87,7 +99,7 @@ namespace XEmuera.Models
 
 			Default = AllModels[DefaultFontName];
 
-			LoadFontsFolder();
+			LoadFontsFolder(GameFolderModel.Instance.Path);
 
 			EnabledList = new FontGroup
 			{
@@ -118,6 +130,15 @@ namespace XEmuera.Models
 			Init = true;
 		}
 
+		public static void LoadCurrentGameFonts()
+		{
+			if (string.IsNullOrWhiteSpace(GameUtils.CurrentGamePath))
+				return;
+
+			if (LoadFontsFolder(GameUtils.CurrentGamePath))
+				Save();
+		}
+
 		public static void Save()
 		{
 			UserList.Clear();
@@ -136,42 +157,38 @@ namespace XEmuera.Models
 			DrawTextUtils.Load();
 		}
 
-		private static void LoadFontsFolder()
+		private static bool LoadFontsFolder(string basePath)
 		{
-			string path = GameFolderModel.Instance.Path + Path.DirectorySeparatorChar + "fonts";
-			if (!Directory.Exists(path))
-				return;
+			if (string.IsNullOrWhiteSpace(basePath) || !Directory.Exists(basePath))
+				return false;
 
-			var list = FileUtils.GetFiles(path, "*.ttf", SearchOption.AllDirectories);
-			if (list.Length == 0)
-				return;
-
-			foreach (var fontFile in list)
+			bool added = false;
+			HashSet<string> seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var path in EnumerateFontDirectories(basePath))
 			{
-				string fileName = Path.GetFileNameWithoutExtension(fontFile);
-				if (AllModels.ContainsKey(fileName))
-					continue;
-
-				var typeface = SKTypeface.FromFile(fontFile);
-				if (typeface == null)
-					continue;
-
-				if (AllModels.ContainsKey(typeface.FamilyName))
-					typeface.Dispose();
-				else
-					AddFontModel(typeface, fileName);
+				foreach (var pattern in ExternalFontExtensions)
+				{
+					foreach (var fontFile in FileUtils.GetFiles(path, pattern, SearchOption.AllDirectories))
+					{
+						if (!seenFiles.Add(fontFile))
+							continue;
+						added |= LoadExternalFont(fontFile);
+					}
+				}
 			}
+			return added;
 		}
 
 		private static void InitFontMapping()
 		{
 			FontNameMapping.Clear();
+			FontAliases.Clear();
 
-			FontNameMapping.Add("ＭＳ ゴシック", "MS Gothic");
-			FontNameMapping.Add("ＭＳ Ｐゴシック", "MS PGothic");
-			FontNameMapping.Add("ＭＳ 明朝", "MS Mincho");
-			FontNameMapping.Add("ＭＳ Ｐ明朝", "MS PMincho");
-			FontNameMapping.Add("微软雅黑", "Microsoft YaHei");
+			AddKnownFontMapping("ＭＳ ゴシック", "MS Gothic");
+			AddKnownFontMapping("ＭＳ Ｐゴシック", "MS PGothic");
+			AddKnownFontMapping("ＭＳ 明朝", "MS Mincho");
+			AddKnownFontMapping("ＭＳ Ｐ明朝", "MS PMincho");
+			AddKnownFontMapping("微软雅黑", "Microsoft YaHei");
 		}
 
 		private static void AddFontFromResource(string fileName)
@@ -195,22 +212,154 @@ namespace XEmuera.Models
 
 			FontNameMapping.GetByValue(fontModel.Name, out var otherName, fileName);
 			fontModel.OtherName = otherName;
+
+			RegisterFontAlias(fontModel.Name, fontModel.Name);
+			RegisterFontAlias(fileName, fontModel.Name);
+			RegisterFontAlias(StripVersionSuffix(fileName), fontModel.Name);
+			RegisterKnownExternalAliases(fileName, fontModel.Name);
+
+			if ((EnabledList != null) && (DisabledList != null))
+				DisabledList.Insert(0, fontModel);
 		}
 
 		public static bool HasFont(string fontName)
 		{
-			if (FontNameMapping.GetByKey(fontName, out string newFontName))
-				fontName = newFontName;
+			fontName = ResolveFontName(fontName);
 			return AllModels.ContainsKey(fontName);
 		}
 
 		public static FontModel GetFont(string fontName)
 		{
-			if (FontNameMapping.GetByKey(fontName, out string newFontName))
-				fontName = newFontName;
+			fontName = ResolveFontName(fontName);
 			if (AllModels.TryGetValue(fontName, out FontModel model))
 				return model;
 			return Default;
+		}
+
+		private static void AddKnownFontMapping(string alias, string fontName)
+		{
+			FontNameMapping.Add(alias, fontName);
+			RegisterFontAlias(alias, fontName);
+		}
+
+		private static IEnumerable<string> EnumerateFontDirectories(string basePath)
+		{
+			HashSet<string> seenDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var directory in Directory.GetDirectories(basePath))
+			{
+				string name = Path.GetFileName(directory);
+				if (!ExternalFontDirectoryNames.Any(item => item.Equals(name, StringComparison.OrdinalIgnoreCase)))
+					continue;
+				if (seenDirectories.Add(directory))
+					yield return directory;
+			}
+		}
+
+		private static bool LoadExternalFont(string fontFile)
+		{
+			string fileName = Path.GetFileNameWithoutExtension(fontFile);
+			var typeface = SKTypeface.FromFile(fontFile);
+			if (typeface == null)
+				return false;
+
+			string familyName = typeface.FamilyName;
+			if (string.IsNullOrWhiteSpace(familyName))
+				familyName = fileName;
+
+			if (AllModels.ContainsKey(familyName))
+			{
+				RegisterFontAlias(fileName, familyName);
+				RegisterFontAlias(StripVersionSuffix(fileName), familyName);
+				RegisterKnownExternalAliases(fileName, familyName);
+				typeface.Dispose();
+				return false;
+			}
+
+			AddFontModel(typeface, fileName);
+			return true;
+		}
+
+		private static void RegisterKnownExternalAliases(string fileName, string canonicalFontName)
+		{
+			string normalizedFileName = StripVersionSuffix(fileName);
+			if (!KnownExternalFontAliases.TryGetValue(normalizedFileName, out var aliases))
+				return;
+
+			foreach (var alias in aliases)
+				RegisterFontAlias(alias, canonicalFontName);
+		}
+
+		private static void RegisterFontAlias(string alias, string canonicalFontName)
+		{
+			if (string.IsNullOrWhiteSpace(alias) || string.IsNullOrWhiteSpace(canonicalFontName))
+				return;
+
+			alias = alias.Trim();
+			canonicalFontName = canonicalFontName.Trim();
+			if (!FontAliases.ContainsKey(alias))
+				FontAliases.Add(alias, canonicalFontName);
+
+			string compactAlias = CompactFontName(alias);
+			if (!string.Equals(compactAlias, alias, StringComparison.Ordinal) && !FontAliases.ContainsKey(compactAlias))
+				FontAliases.Add(compactAlias, canonicalFontName);
+		}
+
+		private static string ResolveFontName(string fontName)
+		{
+			if (string.IsNullOrWhiteSpace(fontName))
+				return fontName;
+
+			fontName = fontName.Trim();
+			if (FontAliases.TryGetValue(fontName, out string canonicalFontName))
+				return canonicalFontName;
+
+			string compactFontName = CompactFontName(fontName);
+			if (!string.Equals(compactFontName, fontName, StringComparison.Ordinal) && FontAliases.TryGetValue(compactFontName, out canonicalFontName))
+				return canonicalFontName;
+
+			if (FontNameMapping.GetByKey(fontName, out canonicalFontName))
+				return canonicalFontName;
+
+			return fontName;
+		}
+
+		private static string CompactFontName(string value)
+		{
+			if (string.IsNullOrWhiteSpace(value))
+				return value;
+
+			StringBuilder builder = new StringBuilder(value.Length);
+			foreach (char c in value)
+			{
+				if (!char.IsWhiteSpace(c))
+					builder.Append(c);
+			}
+			return builder.ToString();
+		}
+
+		private static string StripVersionSuffix(string fileName)
+		{
+			if (string.IsNullOrWhiteSpace(fileName))
+				return fileName;
+
+			int separatorIndex = fileName.LastIndexOf('-');
+			if ((separatorIndex <= 0) || (separatorIndex >= fileName.Length - 1))
+				return fileName;
+
+			bool foundDigit = false;
+			for (int i = separatorIndex + 1; i < fileName.Length; i++)
+			{
+				char c = fileName[i];
+				if (char.IsDigit(c))
+				{
+					foundDigit = true;
+					continue;
+				}
+				if ((c == '.') || (c == '_'))
+					continue;
+				return fileName;
+			}
+			return foundDigit ? fileName.Substring(0, separatorIndex) : fileName;
 		}
 	}
 

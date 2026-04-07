@@ -5,6 +5,7 @@ using System.IO;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Xamarin.Essentials;
 
 namespace XEmuera.Models
 {
@@ -59,16 +60,20 @@ namespace XEmuera.Models
 
 		public static void Load()
 		{
-			AllModels.Clear();
-
 			string mainPath = GameFolderModel.Instance.Path;
-
+			List<GameItemModel> loadedItems = new List<GameItemModel>();
 			if (!Directory.Exists(mainPath))
+			{
+				ApplyLoadedItems(loadedItems);
 				return;
+			}
 
 			var gameItemPaths = Directory.GetDirectories(mainPath);
 			if (gameItemPaths.Length == 0)
+			{
+				ApplyLoadedItems(loadedItems);
 				return;
+			}
 
 			GameItemModel gameItem;
 			char directorySeparatorChar = System.IO.Path.DirectorySeparatorChar;
@@ -94,19 +99,45 @@ namespace XEmuera.Models
 					}
 				}
 
-				AllModels.Add(gameItem);
+				loadedItems.Add(gameItem);
 			}
 
 			string favoritePaths = GameUtils.GetPreferences(PrefKeyFavoriteItem, null);
 			if (!string.IsNullOrEmpty(favoritePaths))
 			{
-				foreach (var itemPath in favoritePaths.Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries))
+				HashSet<string> favorites = new HashSet<string>(
+					favoritePaths.Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries),
+					StringComparer.OrdinalIgnoreCase);
+
+				foreach (var item in loadedItems)
 				{
-					gameItem = AllModels.FirstOrDefault(item => item.Path.Equals(itemPath, StringComparison.OrdinalIgnoreCase));
-					if (gameItem != null)
-						gameItem.Favorite = true;
+					if (favorites.Contains(item.Path))
+						item._favorite = true;
 				}
 			}
+
+			loadedItems.Sort(GameItemSorter);
+
+			ApplyLoadedItems(loadedItems);
+		}
+
+		private static void ApplyLoadedItems(List<GameItemModel> loadedItems)
+		{
+			if (MainThread.IsMainThread)
+			{
+				ReplaceAllModels(loadedItems);
+			}
+			else
+			{
+				MainThread.InvokeOnMainThreadAsync(() => ReplaceAllModels(loadedItems)).GetAwaiter().GetResult();
+			}
+		}
+
+		private static void ReplaceAllModels(List<GameItemModel> loadedItems)
+		{
+			AllModels.Clear();
+			foreach (var item in loadedItems)
+				AllModels.Add(item);
 		}
 
 		private static int GameItemSorter(GameItemModel a, GameItemModel b)

@@ -543,14 +543,14 @@ namespace MinorShift.Emuera.GameProc
 			{
 				var filepath = Program.ErbDir + position.Filename;
 				return FileUtils.Exists(ref filepath)
-					? position.LineNo > 0 ? File.ReadLines(Program.ErbDir + position.Filename, Config.Encode).Skip(position.LineNo - 1).First() : ""
+					? EncodingHelper.ReadLineAt(filepath, position.LineNo)
 					: "";
 			}
 			else if (extents == ".csv")
 			{
-				var filepath = Program.ErbDir + position.Filename;
+				var filepath = Program.CsvDir + position.Filename;
 				return FileUtils.Exists(ref filepath)
-					? position.LineNo > 0 ? File.ReadLines(Program.CsvDir + position.Filename, Config.Encode).Skip(position.LineNo - 1).First() : ""
+					? EncodingHelper.ReadLineAt(filepath, position.LineNo)
 					: "";
 			}
 			else

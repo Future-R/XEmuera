@@ -67,7 +67,7 @@
 
   <ItemGroup>
     <PackageReference Include="ReorderableCollectionView.Forms" Version="1.0.0" />
-    <PackageReference Include="SkiaSharp" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.0" />
     <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
     <PackageReference Include="SkiaSharp.Views.Forms" Version="2.88.0" />
     <PackageReference Include="Spillman.Xamarin.Forms.ColorPicker" Version="1.0.8" />

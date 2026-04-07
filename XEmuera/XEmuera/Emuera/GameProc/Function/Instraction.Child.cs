@@ -1977,7 +1977,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				if (bgm == null) bgm = DependencyService.Get<IPlayer>(DependencyFetchTarget.NewInstance);
+				if (bgm == null)
+					return;
 				bgm.Stop();
 				return;
 			}
@@ -2013,6 +2014,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				ExpressionArgument intExpArg = (ExpressionArgument)func.Argument;
 				Int32 vol = (Int32)intExpArg.Term.GetIntValue(exm);
+				if (bgm == null)
+					bgm = DependencyService.Get<IPlayer>(DependencyFetchTarget.NewInstance);
 				bgm.Volume = vol;
 				return;
 			}

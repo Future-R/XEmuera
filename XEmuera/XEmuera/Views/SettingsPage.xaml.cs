@@ -17,6 +17,8 @@ namespace XEmuera.Views
 
 			Title = StringsText.Settings;
 
+			ConfigModel.EnsureLoaded();
+
 			InitList();
 
 			SettingsListView.ItemsSource = Settings;

@@ -1295,6 +1295,25 @@ namespace MinorShift.Emuera.GameView
 			return window.Title;
 		}
 
+		private int GetScrollBarValueSafe()
+		{
+			if (MainThread.IsMainThread)
+				return (int)window.ScrollBar.Value;
+			return MainThread.InvokeOnMainThreadAsync(() => (int)window.ScrollBar.Value).GetAwaiter().GetResult();
+		}
+
+		private int GetScrollBarMaximumSafe()
+		{
+			if (MainThread.IsMainThread)
+				return (int)window.ScrollBar.Maximum;
+			return MainThread.InvokeOnMainThreadAsync(() => (int)window.ScrollBar.Maximum).GetAwaiter().GetResult();
+		}
+
+		private bool IsBackLogActive()
+		{
+			return GetScrollBarValueSafe() != GetScrollBarMaximumSafe();
+		}
+
 
 		/// <summary>
 		/// 1818以前のRefreshStringsからselectingButton部分を抽出
@@ -1302,7 +1321,7 @@ namespace MinorShift.Emuera.GameView
 		/// </summary>
 		public void RefreshStrings(bool force_Paint)
 		{
-			bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
+			bool isBackLog = IsBackLogActive();
 			//ログ表示はREDRAWの設定に関係なく行うようにする
 			if ((redraw == ConsoleRedraw.None) && (!force_Paint) && (!isBackLog))
 				return;

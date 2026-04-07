@@ -25,6 +25,8 @@ namespace XEmuera.Models
 
 		public static List<ConfigCodeGroup> OtherConfigCodeGroups { get; private set; }
 
+		private static bool IsLoaded => ConfigCodeGroups != null && OtherConfigCodeGroups != null;
+
 		public ConfigItem ConfigItem { get; private set; }
 
 		public ConfigCode Code { get => ConfigItem.Code; }
@@ -110,6 +112,13 @@ namespace XEmuera.Models
 			InitConfigModel(ConfigCodeGroups, true);
 
 			InitConfigModel(OtherConfigCodeGroups);
+		}
+
+		public static void EnsureLoaded()
+		{
+			if (IsLoaded)
+				return;
+			Load();
 		}
 
 		private static void InitConfigModel(List<ConfigCodeGroup> codeGroups, bool hasSwitch = false)

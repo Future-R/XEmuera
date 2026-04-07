@@ -232,8 +232,8 @@ namespace MinorShift.Emuera.GameView
 				Width = 0;
 				return;
 			}
-			Width = sm.GetDisplayLength(Str, Config.Font);
-			XsubPixel = subPixel;
+			Width = sm.GetDisplayLength(Str, Config.Font, subPixel, out float nextSubPixel);
+			XsubPixel = nextSubPixel;
 		}
 	}
 }

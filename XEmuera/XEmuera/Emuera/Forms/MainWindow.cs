@@ -21,6 +21,7 @@ using Xamarin.Essentials;
 using Xamarin.Forms;
 using XEmuera.Drawing;
 using EvilMask.Emuera;
+using XEmuera.Forms;
 
 namespace MinorShift.Emuera
 {
@@ -60,7 +61,20 @@ namespace MinorShift.Emuera
 			//Emuera_verInfo += "+v" + emueraVer.FileBuildPart.ToString() + ((emueraVer.FilePrivatePart > 0) ? "." + emueraVer.FilePrivatePart.ToString() : "");
 			//EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
-			Task.Run(InitConsole);
+			Task.Run(() =>
+			{
+				try
+				{
+					InitConsole();
+				}
+				catch (Exception e)
+				{
+					MainThread.BeginInvokeOnMainThread(() =>
+					{
+						MessageBox.Show(e.ToString(), "InitConsole");
+					});
+				}
+			});
 			
 			// this.richTextBox1.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.richTextBox1_MouseWheel);
 			// this.mainPicBox.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.richTextBox1_MouseWheel);

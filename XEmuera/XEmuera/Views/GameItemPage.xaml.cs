@@ -9,6 +9,7 @@ using Xamarin.Forms.Xaml;
 using XEmuera.Models;
 using Xamarin.CommunityToolkit.Extensions;
 using XEmuera.Resources;
+using Xamarin.Essentials;
 
 namespace XEmuera.Views
 {
@@ -22,6 +23,22 @@ namespace XEmuera.Views
 			Title = StringsText.GameList;
 
 			GameItemListView.ItemsSource = GameItemModel.AllModels;
+
+			GameUtils.LoadCompleted -= RefreshGameList;
+			GameUtils.LoadCompleted += RefreshGameList;
+
+			RefreshGameList();
+		}
+
+		protected override void OnAppearing()
+		{
+			base.OnAppearing();
+			RefreshGameList();
+		}
+
+		private void RefreshGameList()
+		{
+			Task.Run(() => GameItemModel.Load());
 		}
 
 		private void ListView_Refreshing(object sender, EventArgs e)
@@ -29,7 +46,7 @@ namespace XEmuera.Views
 			Task.Run(() =>
 			{
 				GameItemModel.Load();
-				GameItemListView.EndRefresh();
+				MainThread.BeginInvokeOnMainThread(() => GameItemListView.EndRefresh());
 			});
 		}
 
