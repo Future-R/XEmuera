@@ -34,6 +34,8 @@
     <None Remove="Resources\Images\menu_show.svg" />
     <None Remove="Resources\Images\publish.svg" />
     <None Remove="Resources\Images\scroll_vertical.svg" />
+    <None Remove="Resources\Lang\emuera-eng.xml" />
+    <None Remove="Resources\Lang\emuera-zhs.xml" />
     <None Remove="Resources\开源代码使用清单.txt" />
     <None Remove="Resources\私家改造版Emuera_readme.txt" />
   </ItemGroup>
@@ -51,6 +53,8 @@
     <EmbeddedResource Include="Resources\Images\menu_show.svg" />
     <EmbeddedResource Include="Resources\Images\publish.svg" />
     <EmbeddedResource Include="Resources\Images\scroll_vertical.svg" />
+    <EmbeddedResource Include="Resources\Lang\emuera-eng.xml" />
+    <EmbeddedResource Include="Resources\Lang\emuera-zhs.xml" />
     <EmbeddedResource Include="Resources\Docs\OpenSourceCodeManifest.txt" />
     <EmbeddedResource Include="Resources\Docs\私家改造版Emuera_readme.txt" />
   </ItemGroup>

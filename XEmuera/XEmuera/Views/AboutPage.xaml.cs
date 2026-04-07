@@ -14,15 +14,13 @@ namespace XEmuera.Views
 	[XamlCompilation(XamlCompilationOptions.Compile)]
 	public partial class AboutPage : ContentPage
 	{
-		public const string GithubUrl = "https://github.com/Fegelein21/XEmuera";
-		public const string GiteeUrl = "https://gitee.com/fegelein21/XEmuera";
-		public const string AiFaDianUrl = "https://afdian.net/@fegelein21";
+		public const string GithubUrl = "https://github.com/Future-R/XEmuera";
 
 		private static List<AboutModelGroup> AboutList;
 
-		public string AppName { get; private set; } = AppInfo.Name;
+		public string AppName { get; private set; } = "XEmuera-R";
 
-		public string Version { get; private set; } = AppInfo.VersionString;
+		public string Version { get; private set; } = "0.60";
 
 		public AboutPage()
 		{
@@ -46,12 +44,6 @@ namespace XEmuera.Views
 						Text = "Github",
 						Detail = GithubUrl,
 						Url = GithubUrl
-					},
-					new AboutModel
-					{
-						Text = "Gitee",
-						Detail = GiteeUrl,
-						Url = GiteeUrl
 					},
 				},
 				new AboutModelGroup("Emuera")
@@ -87,13 +79,17 @@ namespace XEmuera.Views
 						File = "OpenSourceCodeManifest",
 					},
 				},
-				new AboutModelGroup(StringsText.SupportMe)
+				new AboutModelGroup("作者")
 				{
 					new AboutModel
 					{
-						Text = "爱发电",
-						Detail = AiFaDianUrl,
-						Url = AiFaDianUrl
+						Text = "改版作者",
+						Detail = "未来"
+					},
+					new AboutModel
+					{
+						Text = "原作者",
+						Detail = "Fegelein21"
 					},
 				},
 			};

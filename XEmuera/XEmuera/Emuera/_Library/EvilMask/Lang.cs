@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
+using XEmuera;
 using XEmuera.Models;
 
 namespace EvilMask.Emuera
@@ -1241,6 +1242,7 @@ namespace EvilMask.Emuera
         {
             if (currentLang != null && currentLang == LanguageModel.Language) return;
             foreach (var pair in trItems) pair.Value.Clear();
+            bool loaded = false;
             if (Directory.Exists(langDir))
             {
                 foreach (var path in Directory.EnumerateFiles(langDir, "emuera.*.xml", SearchOption.TopDirectoryOnly))
@@ -1267,9 +1269,17 @@ namespace EvilMask.Emuera
                         {
                             loadLangXML(xml);
                             currentLang = langName;
+                            loaded = true;
                         }
                     }
                 }
+            }
+            registerEmbeddedLanguage("English", "XEmuera.Resources.Lang.emuera-eng.xml");
+            registerEmbeddedLanguage("简体中文", "XEmuera.Resources.Lang.emuera-zhs.xml");
+            if (!loaded && !string.IsNullOrEmpty(LanguageModel.Language) && langList.ContainsKey(LanguageModel.Language))
+            {
+                loadEmbeddedLanguage(langList[LanguageModel.Language]);
+                currentLang = LanguageModel.Language;
             }
             langNames = new string[langList.Count];
             langList.Keys.CopyTo(langNames, 0);
@@ -1351,6 +1361,30 @@ namespace EvilMask.Emuera
         static string[] langNames;
         static readonly Dictionary<string, TranslatableString> trItems = new Dictionary<string, TranslatableString>();
         static readonly Dictionary<Type, TranslatableString> trClass = new Dictionary<Type, TranslatableString>();
+
+        static void registerEmbeddedLanguage(string languageName, string resourceName)
+        {
+            if (!langList.ContainsKey(languageName))
+                langList.Add(languageName, resourceName);
+        }
+
+        static void loadEmbeddedLanguage(string resourceName)
+        {
+            if (string.IsNullOrEmpty(resourceName))
+                return;
+            if (!resourceName.StartsWith("XEmuera.Resources.Lang.", StringComparison.Ordinal))
+                return;
+
+            using (var stream = GameUtils.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                    return;
+
+                XmlDocument xml = new XmlDocument();
+                xml.Load(stream);
+                loadLangXML(xml);
+            }
+        }
 
         static Lang()
         {
