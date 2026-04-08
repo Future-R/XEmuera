@@ -272,9 +272,189 @@
 					Orientation="Vertical"
 					Spacing="10">
 					<StackLayout
+						x:Name="virtualKeypadGroup"
+						IsVisible="False"
+						Orientation="Vertical"
+						HorizontalOptions="End"
+						Spacing="6">
+						<StackLayout
+							x:Name="virtualKeypadActionGroup"
+							Orientation="Horizontal"
+							HorizontalOptions="End"
+							Spacing="6">
+							<Button
+								x:Name="virtualKeypadEnterActionButton"
+								Text="回车"
+								IsVisible="False"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="64"
+								Clicked="virtualKeypadEnterActionButton_Clicked" />
+							<Button
+								x:Name="virtualKeypadAcceptActionButton"
+								Text="确定"
+								IsVisible="False"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="64"
+								Clicked="virtualKeypadAcceptActionButton_Clicked" />
+						</StackLayout>
+						<StackLayout
+							Orientation="Horizontal"
+							HorizontalOptions="End"
+							Spacing="6">
+							<Button
+								Text="/"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadSlashButton_Clicked" />
+							<Button
+								Text="*"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadStarButton_Clicked" />
+							<Button
+								Text="-"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadMinusButton_Clicked" />
+							<Button
+								Text="+"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadPlusButton_Clicked" />
+						</StackLayout>
+						<StackLayout
+							Orientation="Horizontal"
+							HorizontalOptions="End"
+							Spacing="6">
+							<Button
+								Text="7"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad7Button_Clicked" />
+							<Button
+								Text="8"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad8Button_Clicked" />
+							<Button
+								Text="9"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad9Button_Clicked" />
+						</StackLayout>
+						<StackLayout
+							Orientation="Horizontal"
+							HorizontalOptions="End"
+							Spacing="6">
+							<Button
+								Text="4"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad4Button_Clicked" />
+							<Button
+								Text="5"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad5Button_Clicked" />
+							<Button
+								Text="6"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad6Button_Clicked" />
+						</StackLayout>
+						<StackLayout
+							Orientation="Horizontal"
+							HorizontalOptions="End"
+							Spacing="6">
+							<Button
+								Text="1"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad1Button_Clicked" />
+							<Button
+								Text="2"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad2Button_Clicked" />
+							<Button
+								Text="3"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad3Button_Clicked" />
+						</StackLayout>
+						<StackLayout
+							Orientation="Horizontal"
+							HorizontalOptions="End"
+							Spacing="6">
+							<Button
+								Text="0"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypad0Button_Clicked" />
+							<Button
+								Text="."
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadDotButton_Clicked" />
+							<Button
+								x:Name="virtualKeypadConfirmButton"
+								Text="确认"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadConfirmButton_Clicked" />
+							<Button
+								x:Name="virtualKeypadBackButton"
+								Text="返回"
+								Style="{StaticResource VirtualControlButtonStyle}"
+								WidthRequest="52"
+								Clicked="virtualKeypadBackButton_Clicked" />
+						</StackLayout>
+					</StackLayout>
+
+					<StackLayout
+						x:Name="virtualAvgButtonGroup"
+						IsVisible="False"
+						Orientation="Vertical"
+						HorizontalOptions="End"
+						Spacing="8">
+						<Button
+							x:Name="virtualAvgLogButton"
+							Text="日志"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="88"
+							Clicked="virtualAvgLogButton_Clicked" />
+						<Button
+							x:Name="virtualAvgAutoButton"
+							Text="自动"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="88"
+							Clicked="virtualAvgAutoButton_Clicked" />
+						<Button
+							x:Name="virtualAvgSkipButton"
+							Text="跳过"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="88"
+							Clicked="virtualAvgSkipButton_Clicked" />
+						<Button
+							x:Name="virtualAvgSettingButton"
+							Text="设置"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="88"
+							Clicked="virtualAvgSettingButton_Clicked" />
+					</StackLayout>
+
+					<StackLayout
+						x:Name="virtualPageActionGroup"
 						Orientation="Horizontal"
 						HorizontalOptions="End"
 						Spacing="8">
+						<Button
+							x:Name="virtualPageEnterButton"
+							Text="回车"
+							IsVisible="False"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="72"
+							Clicked="virtualPageEnterButton_Clicked" />
 						<Button
 							x:Name="virtualPageConfirmButton"
 							Text="确定"

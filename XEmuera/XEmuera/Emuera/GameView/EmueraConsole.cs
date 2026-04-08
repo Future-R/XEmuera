@@ -2023,10 +2023,75 @@ namespace MinorShift.Emuera.GameView
 			return true;
 		}
 
+		internal bool TrySelectVisibleButtonByLabels(params string[] labels)
+		{
+			ConsoleButtonString matchedButton = FindVisibleButtonByLabels(labels);
+			if (matchedButton == null)
+				return false;
+
+			bool needRefresh = selectingButton != matchedButton || pointingString != matchedButton || selectingCBGButtonInt >= 0;
+			selectingCBGButtonInt = -1;
+			selectingButton = matchedButton;
+			pointingString = matchedButton;
+			if (needRefresh)
+				RefreshStrings(true);
+			return true;
+		}
+
 		internal string GetVisibleButtonKeywordLabel(params string[] keywords)
 		{
-			FindVisibleButtonByKeywords(keywords, out string matchedKeyword);
-			return matchedKeyword;
+			ConsoleButtonString button = FindVisibleButtonByKeywords(keywords, out _);
+			return NormalizeVirtualButtonText(button?.ToString());
+		}
+
+		internal bool HasVisibleButtonKeyword(params string[] keywords)
+		{
+			string label = GetVisibleButtonKeywordLabel(keywords);
+			return !string.IsNullOrEmpty(label);
+		}
+
+		internal bool HasRecentDisplayLineKeyword(int recentLineCount, params string[] keywords)
+		{
+			if (keywords == null || keywords.Length == 0)
+				return false;
+
+			bool lockTaken = false;
+			displayLineListSpinLock.Enter(ref lockTaken);
+			try
+			{
+				if (displayLineList.Count == 0)
+					return false;
+
+				int bottomLineNo = displayLineList.Count - 1;
+				int topLineNo = Math.Max(0, bottomLineNo - Math.Max(0, recentLineCount - 1));
+				for (int i = bottomLineNo; i >= topLineNo; i--)
+				{
+					string lineText = NormalizeVirtualButtonText(displayLineList[i]?.ToString());
+					if (string.IsNullOrEmpty(lineText))
+						continue;
+
+					for (int keywordIndex = 0; keywordIndex < keywords.Length; keywordIndex++)
+					{
+						string keyword = NormalizeVirtualButtonText(keywords[keywordIndex]);
+						if (string.IsNullOrEmpty(keyword))
+							continue;
+						if (lineText.Contains(keyword))
+							return true;
+					}
+				}
+			}
+			finally
+			{
+				if (lockTaken)
+					displayLineListSpinLock.Exit();
+			}
+
+			return false;
+		}
+
+		internal bool HasVisibleButtonLabel(params string[] labels)
+		{
+			return FindVisibleButtonByLabels(labels) != null;
 		}
 
 		private bool CanNavigateSelection()
@@ -2205,6 +2270,40 @@ namespace MinorShift.Emuera.GameView
 							matchedKeyword = keywords[keywordIndex];
 							return candidates[i].Button;
 						}
+					}
+				}
+			}
+			finally
+			{
+				if (lockTaken)
+					displayLineListSpinLock.Exit();
+			}
+			return null;
+		}
+
+		private ConsoleButtonString FindVisibleButtonByLabels(string[] labels)
+		{
+			if (labels == null || labels.Length == 0 || !CanNavigateSelection())
+				return null;
+
+			bool lockTaken = false;
+			displayLineListSpinLock.Enter(ref lockTaken);
+			try
+			{
+				List<VirtualSelectionCandidate> candidates = CollectVisibleSelectionCandidates();
+				for (int i = 0; i < candidates.Count; i++)
+				{
+					string buttonText = NormalizeVirtualButtonText(candidates[i].Button?.ToString());
+					if (string.IsNullOrEmpty(buttonText))
+						continue;
+
+					for (int labelIndex = 0; labelIndex < labels.Length; labelIndex++)
+					{
+						string label = NormalizeVirtualButtonText(labels[labelIndex]);
+						if (string.IsNullOrEmpty(label))
+							continue;
+						if (buttonText == label)
+							return candidates[i].Button;
 					}
 				}
 			}

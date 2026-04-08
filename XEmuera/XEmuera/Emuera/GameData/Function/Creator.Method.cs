@@ -5098,13 +5098,7 @@ namespace MinorShift.Emuera.GameData.Function
 				if (e1 < 0 || e2 < 0 || e1 + 5 > array.GetLength(0) || e2 + 5 > array.GetLength(1))
 					// throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGColorMatrix0, Name, e1, e2));
 					throw new CodeEE(string.Format(Lang.Error.InvalidColorMatrix.Text, Name, e1, e2));
-				for (int x = 0; x < SKColorFilter.ColorMatrixSize; x++)
-                {
-                    if (x % 5 == 4)
-                        cm[x] = 256 - (array[e1 + x / 5, e2 + 4] + array[e1 + 4, e2 + 4]);
-                    else
-                        cm[x] = (array[e1 + x / 5, e2 + (x % 5)] + array[e1 + 4, e2 + (x % 5)]) / 256f;
-                }
+				ConvertGdiColorMatrixToSkia(array, e1, e2, cm);
 			}
 			if(p.Identifier.IsArray3D)
 			{
@@ -5126,15 +5120,38 @@ namespace MinorShift.Emuera.GameData.Function
 				if (e2 < 0 || e3 < 0 || e2 + 5 > array.GetLength(1) || e3 + 5 > array.GetLength(2))
 					// throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGColorMatrix0, Name, e2, e3));
 					throw new CodeEE(string.Format(Lang.Error.InvalidColorMatrix.Text, Name, e2, e3));
-				for (int x = 0; x < SKColorFilter.ColorMatrixSize; x++)
-				{
-                    if (x % 5 == 4)
-                        cm[x] = 256 - (array[e1, e2 + x / 5, e3 + 4] + array[e1, e2 + 4, e3 + 4]);
-                    else
-                        cm[x] = (array[e1, e2 + x / 5, e3 + (x % 5)] + array[e1, e2 + 4, e3 + (x % 5)]) / 256f;
-                }
+				ConvertGdiColorMatrixToSkia(array, e1, e2, e3, cm);
 			}
 			return cm;
+		}
+
+		private static void ConvertGdiColorMatrixToSkia(Int64[,] array, Int64 row, Int64 col, float[] cm)
+		{
+			for (int output = 0; output < 4; output++)
+			{
+				int baseIndex = output * 5;
+				for (int input = 0; input < 4; input++)
+				{
+					// GDI+ uses a 5x5 matrix with translation in row 4; Skia uses a 4x5 matrix
+					// with translation in the last column, so we transpose the RGB/A block here.
+					cm[baseIndex + input] = array[row + input, col + output] / 256f;
+				}
+				// GDI+ translation terms are normalized; Skia expects byte-space offsets.
+				cm[baseIndex + 4] = array[row + 4, col + output];
+			}
+		}
+
+		private static void ConvertGdiColorMatrixToSkia(Int64[,,] array, Int64 index0, Int64 row, Int64 col, float[] cm)
+		{
+			for (int output = 0; output < 4; output++)
+			{
+				int baseIndex = output * 5;
+				for (int input = 0; input < 4; input++)
+				{
+					cm[baseIndex + input] = array[index0, row + input, col + output] / 256f;
+				}
+				cm[baseIndex + 4] = array[index0, row + 4, col + output];
+			}
 		}
 
 		public sealed class GraphicsStateMethod : FunctionMethod

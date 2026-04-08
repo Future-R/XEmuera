@@ -229,12 +229,7 @@ namespace MinorShift.Emuera.Content
 			if (g == null)
 				throw new NullReferenceException();
 
-			//ImageAttributes imageAttributes = new ImageAttributes();
-			//ColorMatrix colorMatrix = new ColorMatrix(cm);
-			//imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
 			SKColorFilter colorFilter = SKColorFilter.CreateColorMatrix(cm);
-
-			//img.GraphicsDraw(g, destRect, imageAttributes);
 			img.GraphicsDraw(g, destRect, colorFilter);
 		}
 
@@ -263,13 +258,7 @@ namespace MinorShift.Emuera.Content
 				throw new NullReferenceException();
 			SKBitmap src = srcGra.GetBitmap();
 
-			//ImageAttributes imageAttributes = new ImageAttributes();
-			//ColorMatrix colorMatrix = new ColorMatrix(cm);
-			//imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default,ColorAdjustType.Bitmap);
 			SKColorFilter colorFilter = SKColorFilter.CreateColorMatrix(cm);
-
-			//g.DrawImage(img.Bitmap, destRect, srcRect, GraphicsUnit.Pixel, imageAttributes);なんでこのパターンないのさ
-			//g.DrawImage(src, destRect, srcRect.Left, srcRect.Top, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
 			DrawBitmapUtils.DrawBitmap(g, src, srcRect, destRect, colorFilter);
 		}
 

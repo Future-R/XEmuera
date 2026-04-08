@@ -605,7 +605,7 @@ namespace MinorShift.Emuera
 				return;
 
 			ScrollBacklogToBottom();
-			ExecuteVirtualSelectedButton(false);
+			ExecuteCurrentSelectedButtonOnly();
 		}
 
 		private void virtualReturnButton_Clicked(object sender, EventArgs e)
@@ -624,16 +624,172 @@ namespace MinorShift.Emuera
 				PressEnterKey(true, true);
 		}
 
+		private void virtualPageEnterButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateEnterAction();
+		}
+
 		private void virtualPageConfirmButton_Clicked(object sender, EventArgs e)
 		{
 			if (console == null || console.IsInProcess)
 				return;
 
 			ScrollBacklogToBottom();
-			TryActivateKeywordButton("确定");
+			TryActivateKeywordButton("确定", "确认");
 		}
 
 		private void virtualPageBackButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("返回", "取消");
+		}
+
+		private void virtualAvgLogButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("日志");
+		}
+
+		private void virtualAvgAutoButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("自动");
+		}
+
+		private void virtualAvgSkipButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("跳过");
+		}
+
+		private void virtualAvgSettingButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("设置");
+		}
+
+		private void virtualKeypadSlashButton_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("/", "[/]", "／");
+		}
+
+		private void virtualKeypadStarButton_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("*", "[*]", "＊");
+		}
+
+		private void virtualKeypadMinusButton_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("-", "[-]", "－");
+		}
+
+		private void virtualKeypadPlusButton_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("+", "[+]", "＋");
+		}
+
+		private void virtualKeypad7Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("7", "[7]");
+		}
+
+		private void virtualKeypad8Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("8", "[8]");
+		}
+
+		private void virtualKeypad9Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("9", "[9]");
+		}
+
+		private void virtualKeypad4Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("4", "[4]");
+		}
+
+		private void virtualKeypad5Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("5", "[5]");
+		}
+
+		private void virtualKeypad6Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("6", "[6]");
+		}
+
+		private void virtualKeypad1Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("1", "[1]");
+		}
+
+		private void virtualKeypad2Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("2", "[2]");
+		}
+
+		private void virtualKeypad3Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("3", "[3]");
+		}
+
+		private void virtualKeypad0Button_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton("0", "[0]");
+		}
+
+		private void virtualKeypadDotButton_Clicked(object sender, EventArgs e)
+		{
+			ActivateKeypadButton(".", "[.]", "．");
+		}
+
+		private void virtualKeypadEnterActionButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateEnterAction();
+		}
+
+		private void virtualKeypadAcceptActionButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("确定", "确认");
+		}
+
+		private void virtualKeypadConfirmButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			ExecuteCurrentSelectedButtonOnly();
+		}
+
+		private void virtualKeypadBackButton_Clicked(object sender, EventArgs e)
 		{
 			if (console == null || console.IsInProcess)
 				return;
@@ -659,17 +815,44 @@ namespace MinorShift.Emuera
 			bool controlsEnabled = virtualControllerLayout.IsVisible;
 			if (!controlsEnabled || console == null)
 			{
+				virtualPageEnterButton.IsVisible = false;
 				virtualPageConfirmButton.IsVisible = false;
 				virtualPageBackButton.IsVisible = false;
+				virtualKeypadEnterActionButton.IsVisible = false;
+				virtualKeypadAcceptActionButton.IsVisible = false;
+				virtualKeypadGroup.IsVisible = false;
+				virtualAvgButtonGroup.IsVisible = false;
 				return;
 			}
 
-			string confirmLabel = console.GetVisibleButtonKeywordLabel("确定");
+			bool hasEnterAction = HasEnterAction();
+			virtualPageEnterButton.IsVisible = hasEnterAction;
+
+			string confirmLabel = console.GetVisibleButtonKeywordLabel("确定", "确认");
 			virtualPageConfirmButton.IsVisible = !string.IsNullOrEmpty(confirmLabel);
+			virtualPageConfirmButton.Text = string.IsNullOrEmpty(confirmLabel) ? "确定" : confirmLabel;
 
 			string backLabel = console.GetVisibleButtonKeywordLabel("返回", "取消");
 			virtualPageBackButton.IsVisible = !string.IsNullOrEmpty(backLabel);
 			virtualPageBackButton.Text = string.IsNullOrEmpty(backLabel) ? "返回" : backLabel;
+
+			string logLabel = console.GetVisibleButtonKeywordLabel("日志");
+			string autoLabel = console.GetVisibleButtonKeywordLabel("自动");
+			string skipLabel = console.GetVisibleButtonKeywordLabel("跳过");
+			string settingLabel = console.GetVisibleButtonKeywordLabel("设置");
+			bool isKeypadPanel = console.HasRecentDisplayLineKeyword(20, "[2]", "［2］")
+				&& console.HasRecentDisplayLineKeyword(20, "[4]", "［4］")
+				&& console.HasRecentDisplayLineKeyword(20, "[6]", "［6］")
+				&& console.HasRecentDisplayLineKeyword(20, "[8]", "［8］");
+			bool isAvgPanel = !string.IsNullOrEmpty(logLabel)
+				&& !string.IsNullOrEmpty(autoLabel)
+				&& !string.IsNullOrEmpty(skipLabel)
+				&& !string.IsNullOrEmpty(settingLabel);
+			virtualKeypadGroup.IsVisible = isKeypadPanel;
+			virtualAvgButtonGroup.IsVisible = !isKeypadPanel && isAvgPanel;
+			virtualKeypadEnterActionButton.IsVisible = isKeypadPanel && hasEnterAction;
+			virtualKeypadAcceptActionButton.IsVisible = isKeypadPanel && !string.IsNullOrEmpty(confirmLabel);
+			virtualPageActionGroup.IsVisible = !isKeypadPanel && (virtualPageEnterButton.IsVisible || virtualPageConfirmButton.IsVisible || virtualPageBackButton.IsVisible);
 		}
 
 		private bool ScrollBacklogToBottom()
@@ -690,6 +873,89 @@ namespace MinorShift.Emuera
 
 			ExecuteVirtualSelectedButton(false);
 			return true;
+		}
+
+		private bool TryActivateEnterAction()
+		{
+			if (TryActivateExactButton("Enter", "[Enter]"))
+				return true;
+			if (console.IsWaitingEnterKey && !console.IsError)
+			{
+				PressEnterKey(false, true);
+				return true;
+			}
+			return false;
+		}
+
+		private bool TryActivateExactButton(params string[] labels)
+		{
+			if (!console.TrySelectVisibleButtonByLabels(labels))
+				return false;
+
+			ExecuteVirtualSelectedButton(false);
+			return true;
+		}
+
+		private void ActivateKeypadButton(params string[] labels)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			if (TryActivateExactButton(labels))
+				return;
+			if (TryActivateKeywordButton(labels))
+				return;
+
+			string fallbackInput = GetKeypadFallbackInput(labels);
+			if (!string.IsNullOrEmpty(fallbackInput))
+				PressEnterKey(fallbackInput);
+		}
+
+		private bool HasEnterAction()
+		{
+			return console.HasVisibleButtonLabel("Enter", "[Enter]")
+				|| console.HasRecentDisplayLineKeyword(20, "[Enter]", "Enter");
+		}
+
+		private void ExecuteCurrentSelectedButtonOnly()
+		{
+			if (console.IsWaitingPrimitive)
+			{
+				if (console.SelectingButton != null)
+					console.ClickSelectedButton(SKMouseButton.Left);
+				return;
+			}
+
+			string str = console.SelectedString;
+			if (str == null)
+				return;
+
+			changeTextbyMouse = console.IsWaintingOnePhrase;
+			richTextBox1.Text = str;
+			if (console.IsWaintingOnePhrase)
+				last_inputed = "";
+			PressEnterKey(false, true);
+		}
+
+		private static string GetKeypadFallbackInput(params string[] labels)
+		{
+			if (labels == null)
+				return null;
+
+			for (int i = 0; i < labels.Length; i++)
+			{
+				string label = labels[i];
+				if (string.IsNullOrWhiteSpace(label))
+					continue;
+				if (label.StartsWith("[") && label.EndsWith("]"))
+					continue;
+				if (label.StartsWith("［") && label.EndsWith("］"))
+					continue;
+				return label;
+			}
+
+			return null;
 		}
 
 		private void ExecuteVirtualSelectedButton(bool mesSkip)
