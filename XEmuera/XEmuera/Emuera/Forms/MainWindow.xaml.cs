@@ -18,6 +18,7 @@ using XEmuera.Views;
 using XEmuera.Resources;
 using System.Timers;
 using XEmuera.Models;
+using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameProc.Function;
 
 namespace MinorShift.Emuera
@@ -94,6 +95,8 @@ namespace MinorShift.Emuera
 
 			InitGameView();
 			InitEmuera();
+			SetButtonOpacity(virtual_controller_button, virtual_controller_button.IsToggled ?? false);
+			RefreshVirtualControllerState();
 		}
 
 		private void LongPressTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -142,6 +145,12 @@ namespace MinorShift.Emuera
 				Constraint.RelativeToParent(parent => parent.Height));
 
 			mainLayout.Children.Add(uiLayout,
+				null,
+				null,
+				Constraint.RelativeToParent(parent => parent.Width),
+				Constraint.RelativeToParent(parent => parent.Height));
+
+			mainLayout.Children.Add(virtualControllerLayout,
 				null,
 				null,
 				Constraint.RelativeToParent(parent => parent.Width),
@@ -545,6 +554,13 @@ namespace MinorShift.Emuera
 				console?.ClearQuickButtonAsync();
 		}
 
+		private void virtual_controller_button_Toggled(object sender, ToggledEventArgs e)
+		{
+			virtualControllerLayout.IsVisible = e.Value;
+			SetButtonOpacity(virtual_controller_button, e.Value);
+			RefreshVirtualControllerState();
+		}
+
 		private void ButtonVisibleGroup_Clicked(object sender, EventArgs e)
 		{
 			var visible = !edit_button.IsVisible;
@@ -553,6 +569,7 @@ namespace MinorShift.Emuera
 			edit_button.IsVisible = visible;
 			scroll_vertical_button.IsVisible = visible;
 			gallery_view_button.IsVisible = visible;
+			virtual_controller_button.IsVisible = visible;
 
 			SetButtonOpacity(menu_show_button, visible);
 		}
@@ -562,7 +579,100 @@ namespace MinorShift.Emuera
 			PressEnterKey(((View)sender).BindingContext as string);
 		}
 
-		private void PressEnterKey(string inputs)
+		private void virtualLeftButton_Clicked(object sender, EventArgs e)
+		{
+			NavigateVirtualSelection(VirtualSelectionDirection.Left);
+		}
+
+		private void virtualUpButton_Clicked(object sender, EventArgs e)
+		{
+			NavigateVirtualSelection(VirtualSelectionDirection.Up);
+		}
+
+		private void virtualRightButton_Clicked(object sender, EventArgs e)
+		{
+			NavigateVirtualSelection(VirtualSelectionDirection.Right);
+		}
+
+		private void virtualDownButton_Clicked(object sender, EventArgs e)
+		{
+			NavigateVirtualSelection(VirtualSelectionDirection.Down);
+		}
+
+		private void virtualConfirmButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			ExecuteVirtualSelectedButton(false);
+		}
+
+		private void virtualReturnButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			bool wasBacklog = ScrollBacklogToBottom();
+			if (wasBacklog)
+				return;
+
+			if (TryActivateKeywordButton("返回", "取消"))
+				return;
+
+			if (console.IsWaitingEnterKey && !console.IsError)
+				PressEnterKey(true, true);
+		}
+
+		private void virtualPageConfirmButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("确定");
+		}
+
+		private void virtualPageBackButton_Clicked(object sender, EventArgs e)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			TryActivateKeywordButton("返回", "取消");
+		}
+
+		private void NavigateVirtualSelection(VirtualSelectionDirection direction)
+		{
+			if (console == null || console.IsInProcess)
+				return;
+
+			ScrollBacklogToBottom();
+			console.NavigateSelection(direction);
+		}
+
+		public void RefreshVirtualControllerState()
+		{
+			if (virtualControllerLayout == null)
+				return;
+
+			bool controlsEnabled = virtualControllerLayout.IsVisible;
+			if (!controlsEnabled || console == null)
+			{
+				virtualPageConfirmButton.IsVisible = false;
+				virtualPageBackButton.IsVisible = false;
+				return;
+			}
+
+			string confirmLabel = console.GetVisibleButtonKeywordLabel("确定");
+			virtualPageConfirmButton.IsVisible = !string.IsNullOrEmpty(confirmLabel);
+
+			string backLabel = console.GetVisibleButtonKeywordLabel("返回", "取消");
+			virtualPageBackButton.IsVisible = !string.IsNullOrEmpty(backLabel);
+			virtualPageBackButton.Text = string.IsNullOrEmpty(backLabel) ? "返回" : backLabel;
+		}
+
+		private bool ScrollBacklogToBottom()
 		{
 			bool isBacklog = vScrollBar.Value != vScrollBar.Maximum;
 			if (isBacklog)
@@ -570,6 +680,44 @@ namespace MinorShift.Emuera
 				vScrollBar.Value = vScrollBar.Maximum;
 				RefreshStrings(true);
 			}
+			return isBacklog;
+		}
+
+		private bool TryActivateKeywordButton(params string[] keywords)
+		{
+			if (!console.TrySelectVisibleButtonByKeywords(keywords))
+				return false;
+
+			ExecuteVirtualSelectedButton(false);
+			return true;
+		}
+
+		private void ExecuteVirtualSelectedButton(bool mesSkip)
+		{
+			if (console.IsWaitingPrimitive)
+			{
+				console.ClickSelectedButton(SKMouseButton.Left);
+				return;
+			}
+
+			string str = console.SelectedString;
+			if (str != null)
+			{
+				changeTextbyMouse = console.IsWaintingOnePhrase;
+				richTextBox1.Text = str;
+				if (console.IsWaintingOnePhrase)
+					last_inputed = "";
+				PressEnterKey(mesSkip, true);
+				return;
+			}
+
+			if (console.IsWaitingEnterKey && !console.IsError)
+				PressEnterKey(mesSkip, true);
+		}
+
+		private void PressEnterKey(string inputs)
+		{
+			ScrollBacklogToBottom();
 
 			if (inputs == null)
 			{

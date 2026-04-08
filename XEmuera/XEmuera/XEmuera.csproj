@@ -29,6 +29,7 @@
     <None Remove="Resources\Images\chevron_right.svg" />
     <None Remove="Resources\Images\edit.svg" />
     <None Remove="Resources\Images\gallery_view.svg" />
+    <None Remove="Resources\Images\gamepad.svg" />
     <None Remove="Resources\Images\lock_rotation.svg" />
     <None Remove="Resources\Images\lock_rotation_open.svg" />
     <None Remove="Resources\Images\menu_show.svg" />
@@ -48,6 +49,7 @@
     <EmbeddedResource Include="Resources\Images\chevron_right.svg" />
     <EmbeddedResource Include="Resources\Images\edit.svg" />
     <EmbeddedResource Include="Resources\Images\gallery_view.svg" />
+    <EmbeddedResource Include="Resources\Images\gamepad.svg" />
     <EmbeddedResource Include="Resources\Images\lock_rotation.svg" />
     <EmbeddedResource Include="Resources\Images\lock_rotation_open.svg" />
     <EmbeddedResource Include="Resources\Images\menu_show.svg" />

@@ -58,6 +58,14 @@ namespace MinorShift.Emuera.GameView
 
     }
 
+	internal enum VirtualSelectionDirection
+	{
+		Left = 0,
+		Up = 1,
+		Right = 2,
+		Down = 3,
+	}
+
 	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
 	[global::System.Reflection.Obfuscation(Exclude=false)]
 	internal enum ConsoleRedraw
@@ -492,6 +500,20 @@ namespace MinorShift.Emuera.GameView
 		ConsoleButtonString lastSelectingButton = null;
 		public ConsoleButtonString SelectingButton { get { return selectingButton; } }
 		public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
+
+		struct VirtualSelectionCandidate
+		{
+			public ConsoleButtonString Button;
+			public int LineNo;
+			public int Left;
+			public int Right;
+			public int Top;
+			public int Bottom;
+			public int AnchorX;
+			public int AnchorY;
+			public int CenterX;
+			public int CenterY;
+		}
 
 		/// <summary>
 		/// ToolTip表示したフラグ
@@ -1520,6 +1542,10 @@ namespace MinorShift.Emuera.GameView
 			else
 				lastDrawnLineNo = lineNo;
 			lastSelectingButton = selectingButton;
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				window?.RefreshVirtualControllerState();
+			});
 			/*デバッグ用。描画が超重い環境を想定2
 			System.Threading.Thread.Sleep(50);
 			*/
@@ -1910,6 +1936,340 @@ namespace MinorShift.Emuera.GameView
 			pointingString = pointing;
 			selectingButton = select;
 			return needRefresh;
+		}
+
+		internal bool NavigateSelection(VirtualSelectionDirection direction)
+		{
+			if (!CanNavigateSelection())
+				return false;
+
+			ConsoleButtonString nextButton = null;
+			bool lockTaken = false;
+			displayLineListSpinLock.Enter(ref lockTaken);
+			try
+			{
+				List<VirtualSelectionCandidate> candidates = CollectVisibleSelectionCandidates();
+				if (candidates.Count == 0)
+					return false;
+
+				int currentIndex = FindSelectionCandidateIndex(candidates, selectingButton);
+				int nextIndex = -1;
+				if (currentIndex >= 0)
+					nextIndex = FindNearestSelectionCandidate(candidates, currentIndex, direction);
+				if (nextIndex < 0)
+					nextIndex = 0;
+				nextButton = candidates[nextIndex].Button;
+			}
+			finally
+			{
+				if (lockTaken)
+					displayLineListSpinLock.Exit();
+			}
+
+			bool needRefresh = selectingButton != nextButton || pointingString != nextButton || selectingCBGButtonInt >= 0;
+			selectingCBGButtonInt = -1;
+			selectingButton = nextButton;
+			pointingString = nextButton;
+			if (needRefresh)
+				RefreshStrings(true);
+			return needRefresh;
+		}
+
+		internal bool ClickSelectedButton(SKMouseButton button)
+		{
+			if (!IsWaitingPrimitive || selectingButton == null)
+				return false;
+
+			Point clickPoint = Point.Empty;
+			bool found = false;
+			bool lockTaken = false;
+			displayLineListSpinLock.Enter(ref lockTaken);
+			try
+			{
+				List<VirtualSelectionCandidate> candidates = CollectVisibleSelectionCandidates();
+				int currentIndex = FindSelectionCandidateIndex(candidates, selectingButton);
+				if (currentIndex >= 0)
+				{
+					VirtualSelectionCandidate candidate = candidates[currentIndex];
+					clickPoint = new Point(candidate.CenterX, candidate.CenterY);
+					found = true;
+				}
+			}
+			finally
+			{
+				if (lockTaken)
+					displayLineListSpinLock.Exit();
+			}
+
+			if (!found)
+				return false;
+
+			MouseDown(clickPoint, button);
+			return true;
+		}
+
+		internal bool TrySelectVisibleButtonByKeywords(params string[] keywords)
+		{
+			ConsoleButtonString matchedButton = FindVisibleButtonByKeywords(keywords, out _);
+			if (matchedButton == null)
+				return false;
+
+			bool needRefresh = selectingButton != matchedButton || pointingString != matchedButton || selectingCBGButtonInt >= 0;
+			selectingCBGButtonInt = -1;
+			selectingButton = matchedButton;
+			pointingString = matchedButton;
+			if (needRefresh)
+				RefreshStrings(true);
+			return true;
+		}
+
+		internal string GetVisibleButtonKeywordLabel(params string[] keywords)
+		{
+			FindVisibleButtonByKeywords(keywords, out string matchedKeyword);
+			return matchedKeyword;
+		}
+
+		private bool CanNavigateSelection()
+		{
+			if (IsInProcess)
+				return false;
+			if (state == ConsoleState.Error)
+				return true;
+			return state == ConsoleState.WaitInput && inputReq != null && inputReq.NeedValue;
+		}
+
+		private List<VirtualSelectionCandidate> CollectVisibleSelectionCandidates()
+		{
+			List<VirtualSelectionCandidate> candidates = new List<VirtualSelectionCandidate>();
+			if (displayLineList.Count == 0)
+				return candidates;
+
+			int pointY = ClientHeight - DisplayUtils.HeightOffset;
+			int bottomLineNo = GetScrollBarValueSafe() - 1;
+			if (bottomLineNo < 0)
+				return candidates;
+			if (displayLineList.Count - 1 < bottomLineNo)
+				bottomLineNo = displayLineList.Count - 1;
+			int topLineNo = bottomLineNo - (pointY / Config.LineHeight + 1);
+			if (topLineNo < 0)
+				topLineNo = 0;
+			pointY -= (bottomLineNo - topLineNo) * Config.LineHeight;
+
+			for (int i = topLineNo; i <= bottomLineNo; i++)
+			{
+				ConsoleDisplayLine curLine = displayLineList[i];
+				foreach (ConsoleButtonString button in curLine.Buttons)
+				{
+					if (!IsSelectableNavigationButton(button))
+						continue;
+
+					int minTop = int.MaxValue;
+					int maxBottom = int.MinValue;
+					if (button.StrArray != null)
+					{
+						foreach (AConsoleDisplayPart part in button.StrArray)
+						{
+							if (part == null)
+								continue;
+							if (part.Top < minTop)
+								minTop = part.Top;
+							if (part.Bottom > maxBottom)
+								maxBottom = part.Bottom;
+						}
+					}
+					if (minTop == int.MaxValue || maxBottom == int.MinValue)
+					{
+						minTop = 0;
+						maxBottom = Config.FontSize;
+					}
+
+					candidates.Add(new VirtualSelectionCandidate
+					{
+						Button = button,
+						LineNo = i,
+						Left = button.PointX,
+						Right = button.PointX + button.Width,
+						Top = pointY + minTop,
+						Bottom = pointY + maxBottom,
+						AnchorX = button.PointX,
+						AnchorY = pointY + (minTop + maxBottom) / 2,
+						CenterX = button.PointX + button.Width / 2,
+						CenterY = pointY + (minTop + maxBottom) / 2,
+					});
+				}
+
+				pointY += Config.LineHeight;
+			}
+
+			return candidates;
+		}
+
+		private bool IsSelectableNavigationButton(ConsoleButtonString button)
+		{
+			if (button == null || !button.IsButton)
+				return false;
+			if (button.Width <= 0)
+				return false;
+			if (button.Generation != lastButtonGeneration)
+				return false;
+			if (state == ConsoleState.WaitInput && inputReq != null && inputReq.InputType == InputType.IntValue && !button.IsInteger)
+				return false;
+			return true;
+		}
+
+		private static int FindSelectionCandidateIndex(List<VirtualSelectionCandidate> candidates, ConsoleButtonString button)
+		{
+			if (button == null)
+				return -1;
+			for (int i = 0; i < candidates.Count; i++)
+			{
+				if (candidates[i].Button == button)
+					return i;
+			}
+			return -1;
+		}
+
+		private int FindNearestSelectionCandidate(List<VirtualSelectionCandidate> candidates, int currentIndex, VirtualSelectionDirection direction)
+		{
+			if (direction == VirtualSelectionDirection.Left || direction == VirtualSelectionDirection.Right)
+			{
+				int sameRowIndex = FindNearestSelectionCandidateCore(candidates, currentIndex, direction, true);
+				if (sameRowIndex >= 0)
+					return sameRowIndex;
+			}
+
+			return FindNearestSelectionCandidateCore(candidates, currentIndex, direction, false);
+		}
+
+		private static int FindNearestSelectionCandidateCore(List<VirtualSelectionCandidate> candidates, int currentIndex, VirtualSelectionDirection direction, bool sameLineOnly)
+		{
+			VirtualSelectionCandidate current = candidates[currentIndex];
+			double bestEdgeDistance = double.MaxValue;
+			double bestOrthogonalDistance = double.MaxValue;
+			double bestDistance = double.MaxValue;
+			int bestIndex = -1;
+
+			for (int i = 0; i < candidates.Count; i++)
+			{
+				if (i == currentIndex)
+					continue;
+				if (sameLineOnly && candidates[i].LineNo != current.LineNo)
+					continue;
+
+				double deltaX = candidates[i].AnchorX - current.AnchorX;
+				double deltaY = candidates[i].AnchorY - current.AnchorY;
+				if (!IsCandidateInDirection(direction, deltaX, deltaY))
+					continue;
+
+				double edgeDistance = GetDirectionalEdgeDistance(current, candidates[i], direction);
+				double orthogonalDistance = GetOrthogonalDistance(current, candidates[i], direction);
+				double distance = deltaX * deltaX + deltaY * deltaY;
+				if (edgeDistance < bestEdgeDistance
+					|| (edgeDistance == bestEdgeDistance && orthogonalDistance < bestOrthogonalDistance)
+					|| (edgeDistance == bestEdgeDistance && orthogonalDistance == bestOrthogonalDistance && distance < bestDistance))
+				{
+					bestEdgeDistance = edgeDistance;
+					bestOrthogonalDistance = orthogonalDistance;
+					bestDistance = distance;
+					bestIndex = i;
+				}
+			}
+
+			return bestIndex;
+		}
+
+		private ConsoleButtonString FindVisibleButtonByKeywords(string[] keywords, out string matchedKeyword)
+		{
+			matchedKeyword = null;
+			if (keywords == null || keywords.Length == 0 || !CanNavigateSelection())
+				return null;
+
+			bool lockTaken = false;
+			displayLineListSpinLock.Enter(ref lockTaken);
+			try
+			{
+				List<VirtualSelectionCandidate> candidates = CollectVisibleSelectionCandidates();
+				for (int i = 0; i < candidates.Count; i++)
+				{
+					string buttonText = NormalizeVirtualButtonText(candidates[i].Button?.ToString());
+					if (string.IsNullOrEmpty(buttonText))
+						continue;
+
+					for (int keywordIndex = 0; keywordIndex < keywords.Length; keywordIndex++)
+					{
+						string keyword = NormalizeVirtualButtonText(keywords[keywordIndex]);
+						if (string.IsNullOrEmpty(keyword))
+							continue;
+						if (buttonText.Contains(keyword))
+						{
+							matchedKeyword = keywords[keywordIndex];
+							return candidates[i].Button;
+						}
+					}
+				}
+			}
+			finally
+			{
+				if (lockTaken)
+					displayLineListSpinLock.Exit();
+			}
+			return null;
+		}
+
+		private static bool IsCandidateInDirection(VirtualSelectionDirection direction, double deltaX, double deltaY)
+		{
+			switch (direction)
+			{
+				case VirtualSelectionDirection.Left:
+					return deltaX < 0 && Math.Abs(deltaY) <= -deltaX;
+				case VirtualSelectionDirection.Up:
+					return deltaY < 0 && Math.Abs(deltaX) <= -deltaY;
+				case VirtualSelectionDirection.Right:
+					return deltaX > 0 && Math.Abs(deltaY) <= deltaX;
+				case VirtualSelectionDirection.Down:
+					return deltaY > 0 && Math.Abs(deltaX) <= deltaY;
+				default:
+					return false;
+			}
+		}
+
+		private static double GetDirectionalEdgeDistance(VirtualSelectionCandidate current, VirtualSelectionCandidate candidate, VirtualSelectionDirection direction)
+		{
+			switch (direction)
+			{
+				case VirtualSelectionDirection.Left:
+					return Math.Max(0, current.Left - candidate.Right);
+				case VirtualSelectionDirection.Up:
+					return Math.Max(0, current.Top - candidate.Bottom);
+				case VirtualSelectionDirection.Right:
+					return Math.Max(0, candidate.Left - current.Right);
+				case VirtualSelectionDirection.Down:
+					return Math.Max(0, candidate.Top - current.Bottom);
+				default:
+					return double.MaxValue;
+			}
+		}
+
+		private static double GetOrthogonalDistance(VirtualSelectionCandidate current, VirtualSelectionCandidate candidate, VirtualSelectionDirection direction)
+		{
+			switch (direction)
+			{
+				case VirtualSelectionDirection.Left:
+				case VirtualSelectionDirection.Right:
+					return Math.Abs(candidate.AnchorY - current.AnchorY);
+				case VirtualSelectionDirection.Up:
+				case VirtualSelectionDirection.Down:
+					return Math.Abs(candidate.AnchorX - current.AnchorX);
+				default:
+					return double.MaxValue;
+			}
+		}
+
+		private static string NormalizeVirtualButtonText(string text)
+		{
+			if (string.IsNullOrEmpty(text))
+				return string.Empty;
+			return text.Replace(" ", "").Replace("\t", "").Replace("\r", "").Replace("\n", "").Trim();
 		}
 
 

@@ -26,6 +26,53 @@
 					Property="Padding"
 					Value="6" />
 			</Style>
+
+			<Style
+				x:Key="VirtualControlButtonStyle"
+				TargetType="Button">
+				<Setter
+					Property="BackgroundColor"
+					Value="#66000000" />
+				<Setter
+					Property="TextColor"
+					Value="White" />
+				<Setter
+					Property="CornerRadius"
+					Value="24" />
+				<Setter
+					Property="WidthRequest"
+					Value="48" />
+				<Setter
+					Property="HeightRequest"
+					Value="48" />
+				<Setter
+					Property="Padding"
+					Value="0" />
+				<Setter
+					Property="Margin"
+					Value="2" />
+				<Setter
+					Property="Opacity"
+					Value="0.9" />
+				<Setter
+					Property="FontAttributes"
+					Value="Bold" />
+			</Style>
+
+			<Style
+				x:Key="VirtualRoundButtonStyle"
+				TargetType="Button"
+				BasedOn="{StaticResource VirtualControlButtonStyle}">
+				<Setter
+					Property="WidthRequest"
+					Value="64" />
+				<Setter
+					Property="HeightRequest"
+					Value="64" />
+				<Setter
+					Property="CornerRadius"
+					Value="32" />
+			</Style>
 		</ResourceDictionary>
 	</ContentPage.Resources>
 
@@ -92,6 +139,14 @@
 						Toggled="gallery_view_button_Toggled"
 						IsToggled="True" />
 
+					<views:TintImageButton
+						x:Name="virtual_controller_button"
+						Image="gamepad.svg"
+						ToggledImage="gamepad.svg"
+						Style="{StaticResource TintImageButtonStyle}"
+						Toggled="virtual_controller_button_Toggled"
+						IsToggled="True" />
+
                     <views:TintImageButton
 						x:Name="menu_show_button"
 						Image="menu_show.svg"
@@ -145,6 +200,114 @@
 
 				</ScrollView>
 			</StackLayout>
+
+			<Grid
+				x:Name="virtualControllerLayout"
+				InputTransparent="True"
+				CascadeInputTransparent="False"
+				Padding="16,56,16,16">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*" />
+					<RowDefinition Height="Auto" />
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto" />
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<Grid
+					Grid.Row="1"
+					Grid.Column="0"
+					RowSpacing="4"
+					ColumnSpacing="4">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="Auto" />
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="Auto" />
+					</Grid.ColumnDefinitions>
+
+					<Button
+						Grid.Row="0"
+						Grid.Column="1"
+						Text="▲"
+						Style="{StaticResource VirtualControlButtonStyle}"
+						Clicked="virtualUpButton_Clicked" />
+					<Button
+						Grid.Row="1"
+						Grid.Column="0"
+						Text="◀"
+						Style="{StaticResource VirtualControlButtonStyle}"
+						Clicked="virtualLeftButton_Clicked" />
+					<BoxView
+						Grid.Row="1"
+						Grid.Column="1"
+						InputTransparent="True"
+						WidthRequest="48"
+						HeightRequest="48" />
+					<Button
+						Grid.Row="1"
+						Grid.Column="2"
+						Text="▶"
+						Style="{StaticResource VirtualControlButtonStyle}"
+						Clicked="virtualRightButton_Clicked" />
+					<Button
+						Grid.Row="2"
+						Grid.Column="1"
+						Text="▼"
+						Style="{StaticResource VirtualControlButtonStyle}"
+						Clicked="virtualDownButton_Clicked" />
+				</Grid>
+
+				<StackLayout
+					Grid.Row="1"
+					Grid.Column="2"
+					HorizontalOptions="End"
+					VerticalOptions="End"
+					Orientation="Vertical"
+					Spacing="10">
+					<StackLayout
+						Orientation="Horizontal"
+						HorizontalOptions="End"
+						Spacing="8">
+						<Button
+							x:Name="virtualPageConfirmButton"
+							Text="确定"
+							IsVisible="False"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="72"
+							Clicked="virtualPageConfirmButton_Clicked" />
+						<Button
+							x:Name="virtualPageBackButton"
+							Text="取消"
+							IsVisible="False"
+							Style="{StaticResource VirtualControlButtonStyle}"
+							WidthRequest="72"
+							Clicked="virtualPageBackButton_Clicked" />
+					</StackLayout>
+
+					<StackLayout
+						Orientation="Horizontal"
+						HorizontalOptions="End"
+						Spacing="12">
+						<Button
+							x:Name="virtualConfirmButton"
+							Text="确认"
+							Style="{StaticResource VirtualRoundButtonStyle}"
+							Clicked="virtualConfirmButton_Clicked" />
+						<Button
+							x:Name="virtualReturnButton"
+							Text="返回"
+							Style="{StaticResource VirtualRoundButtonStyle}"
+							Clicked="virtualReturnButton_Clicked" />
+					</StackLayout>
+				</StackLayout>
+			</Grid>
 		</RelativeLayout>
 
 		<StackLayout
