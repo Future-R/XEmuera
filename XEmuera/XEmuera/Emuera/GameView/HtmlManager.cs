@@ -313,6 +313,7 @@ namespace MinorShift.Emuera.GameView
 			MixedNum height = null;
 			bool isRelative = true;
 			int color = -1;
+			int depth = 0;
 
 			while (wc != null && !wc.EOL)
 			{
@@ -356,6 +357,11 @@ namespace MinorShift.Emuera.GameView
 					if (color >= 0)
 						throw new CodeEE(string.Format(trerror.DuplicateAttribute.Text, tag, word.Code));
 					color = stringToColorInt32(attrValue);
+				}
+				else if (word.Code.Equals("depth", StringComparison.OrdinalIgnoreCase))
+				{
+					if (!int.TryParse(attrValue, out depth))
+						throw new CodeEE(string.Format(trerror.CanNotInterpretAttribute.Text, attrValue));
 				}
 				else if (word.Code.Equals("size", StringComparison.OrdinalIgnoreCase))
 				{

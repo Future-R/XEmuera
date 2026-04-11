@@ -50,7 +50,10 @@ namespace MinorShift.Emuera.GameView
 			if (state != ConsoleState.WaitInput)
 				return;
 
-			if (inputReq.InputType != GameProc.InputType.IntValue && inputReq.InputType != GameProc.InputType.StrValue)
+			if (inputReq.InputType != GameProc.InputType.IntValue
+				&& inputReq.InputType != GameProc.InputType.StrValue
+				&& inputReq.InputType != GameProc.InputType.IntButton
+				&& inputReq.InputType != GameProc.InputType.StrButton)
 				return;
 
 			bool lockTaken = false;

@@ -95,6 +95,8 @@ namespace MinorShift.Emuera
 
 			InitGameView();
 			InitEmuera();
+			StartupFontScale = Math.Max(0.01f, Config.FontScale);
+			ApplyRuntimeDisplayScale(Config.FontScale, false);
 			SetButtonOpacity(virtual_controller_button, virtual_controller_button.IsToggled ?? false);
 			RefreshVirtualControllerState();
 		}
@@ -129,6 +131,8 @@ namespace MinorShift.Emuera
 		}
 
 		private double ScaledWindowX;
+		private float StartupFontScale;
+		private float CurrentRuntimeScale = 1f;
 
 		private void InitGameView()
 		{
@@ -202,6 +206,59 @@ namespace MinorShift.Emuera
 			Config.RefreshDisplayConfig();
 			console.setStBar(Config.DrawLineString);
 			mainPicBox.TranslationX = 0;
+			ApplyRuntimeDisplayScale(Config.FontScale, false);
+		}
+
+		public void ApplyRuntimeDisplayScale(float fontScale, bool refreshSurface = true)
+		{
+			float clampedScale = Math.Max(0.5f, Math.Min(5.0f, fontScale));
+			Config.SetRuntimeFontScale(clampedScale);
+
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				Config.ApplyRuntimeDisplaySettings(ConfigData.Instance);
+				int originalWindowX = ConfigData.Instance.GetConfigValue<int>(ConfigCode.WindowX);
+				int originalFontSize = ConfigData.Instance.GetConfigValue<int>(ConfigCode.FontSize);
+				ScaledWindowX = originalWindowX * Config.FontScale * Config.FontSize / originalFontSize / DisplayUtils.ScreenDensity;
+				InitGameView();
+				mainPicBox.Scale = 1f;
+				mainPicBox.TranslationX = 0;
+				CurrentRuntimeScale = 1f;
+				console?.ReflowDisplayLinesForCurrentScale();
+				RefreshQuickButtonGroup();
+				RefreshScrollBarLayout();
+				RefreshVirtualControllerState();
+				if (refreshSurface)
+					mainPicBox.InvalidateSurface();
+			});
+		}
+
+		private void AdjustRuntimeDisplayScale(float delta)
+		{
+			float newScale = (float)Math.Round(Config.FontScale + delta, 2);
+			newScale = Math.Max(0.5f, Math.Min(5.0f, newScale));
+
+			var model = ConfigModel.Get(ConfigCode.FontScale);
+			if (model != null)
+			{
+				model.ConfigItem.Value = newScale;
+				model.UpdateValue();
+				ApplyRuntimeDisplayScale(newScale);
+			}
+			else
+			{
+				ApplyRuntimeDisplayScale(newScale);
+			}
+		}
+
+		private SKPoint ToLogicalTouchPoint(SKPoint location)
+		{
+			if (Math.Abs(CurrentRuntimeScale - 1f) < 0.0001f)
+				return location;
+
+			float logicalX = location.X / CurrentRuntimeScale;
+			float logicalY = (float)(mainPicBox.Height - ((mainPicBox.Height - location.Y) / CurrentRuntimeScale));
+			return new SKPoint(logicalX, logicalY);
 		}
 
 		public void RefreshQuickButtonGroup()
@@ -291,7 +348,8 @@ namespace MinorShift.Emuera
 		/// <param name="e"></param>
 		private void EraPictureBox_Touch(object sender, SKTouchEventArgs e)
 		{
-			MouseLocation = new System.Drawing.Point((int)e.Location.X, (int)e.Location.Y);
+			SKPoint logicalPoint = ToLogicalTouchPoint(e.Location);
+			MouseLocation = new System.Drawing.Point((int)logicalPoint.X, (int)logicalPoint.Y);
 
 			if (console.MoveMouse(MouseLocation))
 				RefreshStrings(true);
@@ -304,14 +362,14 @@ namespace MinorShift.Emuera
 
 					IsMouseMoveAction = false;
 					IsDragScrollBar = true;
-					PrevPoint = e.Location;
+					PrevPoint = logicalPoint;
 					StartPoint = PrevPoint;
 
 					IsLongPressed = false;
 					if (Config.LongPressSkip)
 						LongPressTimer.Enabled = true;
 
-					PicBoxMinX = mainLayout.Width - mainPicBox.Width;
+					PicBoxMinX = Math.Min(0d, mainLayout.Width - mainPicBox.Width * CurrentRuntimeScale);
 					PicBoxMaxX = 0;
 
 					MoveDistance = Point.Zero;
@@ -325,7 +383,7 @@ namespace MinorShift.Emuera
 					IsMouseMoveAction = true;
 
 					//mainPicBox
-					MoveDistance.X += e.Location.X - PrevPoint.X;
+					MoveDistance.X += logicalPoint.X - PrevPoint.X;
 
 					if (Config.PanSpeed > 1f && mainPicBox.TranslationX > PicBoxMinX && mainPicBox.TranslationX < PicBoxMaxX)
 						MoveDistance.X += MoveDistance.X * (Config.PanSpeed - 1f);
@@ -336,7 +394,7 @@ namespace MinorShift.Emuera
 						mainPicBox.TranslationX = Math.Clamp(mainPicBox.TranslationX + moveX, PicBoxMinX, PicBoxMaxX);
 
 					//vScrollBar
-					MoveDistance.Y += e.Location.Y - PrevPoint.Y;
+					MoveDistance.Y += logicalPoint.Y - PrevPoint.Y;
 					int sign = (int)(MoveDistance.Y / moveY);
 					if (sign != 0 && DisplayUtils.DirectionLimitY(sign, vScrollBar.Value, vScrollBar.Minimum, vScrollBar.Maximum))
 					{
@@ -344,7 +402,7 @@ namespace MinorShift.Emuera
 						MoveDistance.Y %= moveY;
 					}
 
-					PrevPoint = e.Location;
+					PrevPoint = logicalPoint;
 					e.Handled = true;
 					return;
 
@@ -354,7 +412,7 @@ namespace MinorShift.Emuera
 					if (Config.LongPressSkip)
 						LongPressTimer.Enabled = false;
 
-					MouseReleased(e);
+					MouseReleased(e, logicalPoint);
 					LeaveMouse();
 
 					e.Handled = true;
@@ -371,9 +429,9 @@ namespace MinorShift.Emuera
 			}
 		}
 
-		private void MouseReleased(SKTouchEventArgs e)
+		private void MouseReleased(SKTouchEventArgs e, SKPoint logicalPoint)
 		{
-			if (IsMouseMove(e.Location))
+			if (IsMouseMove(logicalPoint))
 				return;
 
 			//if (!Config.UseMouse)
@@ -561,6 +619,16 @@ namespace MinorShift.Emuera
 			RefreshVirtualControllerState();
 		}
 
+		private void zoom_out_button_Clicked(object sender, EventArgs e)
+		{
+			AdjustRuntimeDisplayScale(-0.1f);
+		}
+
+		private void zoom_in_button_Clicked(object sender, EventArgs e)
+		{
+			AdjustRuntimeDisplayScale(0.1f);
+		}
+
 		private void ButtonVisibleGroup_Clicked(object sender, EventArgs e)
 		{
 			var visible = !edit_button.IsVisible;
@@ -570,6 +638,8 @@ namespace MinorShift.Emuera
 			scroll_vertical_button.IsVisible = visible;
 			gallery_view_button.IsVisible = visible;
 			virtual_controller_button.IsVisible = visible;
+			zoom_out_button.IsVisible = visible;
+			zoom_in_button.IsVisible = visible;
 
 			SetButtonOpacity(menu_show_button, visible);
 		}
@@ -617,7 +687,7 @@ namespace MinorShift.Emuera
 			if (wasBacklog)
 				return;
 
-			if (TryActivateKeywordButton("返回", "取消"))
+			if (TryActivateKeywordButton("返回", "取消", "归返", "结束", "完毕", "否"))
 				return;
 
 			if (console.IsWaitingEnterKey && !console.IsError)
@@ -639,7 +709,7 @@ namespace MinorShift.Emuera
 				return;
 
 			ScrollBacklogToBottom();
-			TryActivateKeywordButton("确定", "确认");
+			TryActivateKeywordButton("确认", "确定", "调合", "选定", "是");
 		}
 
 		private void virtualPageBackButton_Clicked(object sender, EventArgs e)
@@ -648,7 +718,7 @@ namespace MinorShift.Emuera
 				return;
 
 			ScrollBacklogToBottom();
-			TryActivateKeywordButton("返回", "取消");
+			TryActivateKeywordButton("返回", "取消", "归返", "结束", "完毕", "否");
 		}
 
 		private void virtualAvgLogButton_Clicked(object sender, EventArgs e)
@@ -777,7 +847,7 @@ namespace MinorShift.Emuera
 				return;
 
 			ScrollBacklogToBottom();
-			TryActivateKeywordButton("确定", "确认");
+			TryActivateKeywordButton("确认", "确定", "调合", "选定", "是");
 		}
 
 		private void virtualKeypadConfirmButton_Clicked(object sender, EventArgs e)
@@ -795,7 +865,7 @@ namespace MinorShift.Emuera
 				return;
 
 			ScrollBacklogToBottom();
-			TryActivateKeywordButton("返回", "取消");
+			TryActivateKeywordButton("返回", "取消", "归返", "结束", "完毕", "否");
 		}
 
 		private void NavigateVirtualSelection(VirtualSelectionDirection direction)
@@ -828,11 +898,11 @@ namespace MinorShift.Emuera
 			bool hasEnterAction = HasEnterAction();
 			virtualPageEnterButton.IsVisible = hasEnterAction;
 
-			string confirmLabel = console.GetVisibleButtonKeywordLabel("确定", "确认");
+			string confirmLabel = console.GetVisibleButtonKeywordLabel("确认", "确定", "调合", "选定", "是");
 			virtualPageConfirmButton.IsVisible = !string.IsNullOrEmpty(confirmLabel);
 			virtualPageConfirmButton.Text = string.IsNullOrEmpty(confirmLabel) ? "确定" : confirmLabel;
 
-			string backLabel = console.GetVisibleButtonKeywordLabel("返回", "取消");
+			string backLabel = console.GetVisibleButtonKeywordLabel("返回", "取消", "归返", "结束", "完毕", "否");
 			virtualPageBackButton.IsVisible = !string.IsNullOrEmpty(backLabel);
 			virtualPageBackButton.Text = string.IsNullOrEmpty(backLabel) ? "返回" : backLabel;
 

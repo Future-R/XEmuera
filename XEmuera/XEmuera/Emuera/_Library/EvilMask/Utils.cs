@@ -21,7 +21,6 @@ namespace EvilMask.Emuera
 		public static string GetValidPath(string path)
 		{
 			path = path.Replace('\\', '/').Replace("../", "").Replace("./", "");
-			path = MinorShift.Emuera.Program.ExeDir + path;
 			try
 			{ 
 				if (Path.GetPathRoot(path) != string.Empty)
@@ -31,7 +30,8 @@ namespace EvilMask.Emuera
 			{
 				return null;
 			}
-			return path;
+			path = path.Replace('/', Path.DirectorySeparatorChar);
+			return Path.Combine(MinorShift.Emuera.Program.ExeDir, path);
 		}
 
 		// filepathの安全性(ゲームフォルダ以外のフォルダか)を確認しない

@@ -142,6 +142,12 @@ namespace MinorShift.Emuera.GameView
 			measureCacheOrder.Enqueue(key);
 		}
 
+		public void ResetCache()
+		{
+			measureCache.Clear();
+			measureCacheOrder.Clear();
+		}
+
 
 		bool disposed = false;
 		public void Dispose()

@@ -10,6 +10,7 @@ using System.IO;
 using System.Text;
 using XEmuera.Forms;
 using XEmuera;
+using Xamarin.Essentials;
 using trmb = EvilMask.Emuera.Lang.MessageBox;
 using trerror = EvilMask.Emuera.Lang.Error;
 using trsl = EvilMask.Emuera.Lang.SystemLine;
@@ -720,6 +721,64 @@ namespace MinorShift.Emuera.GameView
 			if (printBuffer.IsEmpty)
 				return null;
 			return  printBuffer.Flush(stringMeasure, force_temporary);
+		}
+
+		public void ReflowDisplayLinesForCurrentScale()
+		{
+			bool lockTaken = false;
+			displayLineListSpinLock.Enter(ref lockTaken);
+			int scrollFromBottom = 0;
+			try
+			{
+				scrollFromBottom = (int)(window.ScrollBar.Maximum - window.ScrollBar.Value);
+				if (displayLineList.Count == 0)
+				{
+					stringMeasure.ResetCache();
+					return;
+				}
+
+				List<ConsoleDisplayLine[]> groups = new List<ConsoleDisplayLine[]>();
+				List<ConsoleDisplayLine> currentGroup = new List<ConsoleDisplayLine>();
+				for (int i = 0; i < displayLineList.Count; i++)
+				{
+					ConsoleDisplayLine line = displayLineList[i];
+					if (line.IsLogicalLine && currentGroup.Count > 0)
+					{
+						groups.Add(currentGroup.ToArray());
+						currentGroup.Clear();
+					}
+					currentGroup.Add(line);
+				}
+				if (currentGroup.Count > 0)
+					groups.Add(currentGroup.ToArray());
+
+				displayLineList.Clear();
+				logicalLineCount = 0;
+				lineNo = 0;
+				lastDrawnLineNo = -1;
+				stringMeasure.ResetCache();
+
+				foreach (ConsoleDisplayLine[] group in groups)
+				{
+					string html = HtmlManager.DisplayLine2Html(group, true);
+					ConsoleDisplayLine[] reflown = HtmlManager.Html2DisplayLine(html, stringMeasure, this);
+					addRangeDisplayLine(reflown);
+				}
+			}
+			finally
+			{
+				if (lockTaken)
+					displayLineListSpinLock.Exit();
+			}
+
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				verticalScrollBarUpdateAsync();
+				int restoredValue = Math.Max((int)window.ScrollBar.Minimum, (int)window.ScrollBar.Maximum - scrollFromBottom);
+				window.ScrollBar.Value = restoredValue;
+			});
+			RefreshQuickButton();
+			RefreshStrings(true);
 		}
 		
 	}

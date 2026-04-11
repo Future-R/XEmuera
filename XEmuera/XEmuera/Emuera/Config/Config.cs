@@ -272,6 +272,40 @@ namespace MinorShift.Emuera
 			DisplayUtils.ShapeHeightOffset = -(LineHeight - 6);
 		}
 
+		public static void SetRuntimeFontScale(float fontScale)
+		{
+			FontScale = fontScale;
+		}
+
+		public static void ApplyRuntimeDisplaySettings(ConfigData instance)
+		{
+			AdaptiveFont = instance.GetConfigValue<bool>(ConfigCode.AdaptiveFont);
+			AdaptiveFontSize = instance.GetConfigValue<int>(ConfigCode.AdaptiveFontSize);
+			FontScale = instance.GetConfigValue<float>(ConfigCode.FontScale);
+			FontSize = instance.GetConfigValue<int>(ConfigCode.FontSize);
+			LineHeight = instance.GetConfigValue<int>(ConfigCode.LineHeight);
+
+			if (AdaptiveFont)
+			{
+				LineHeight = LineHeight * AdaptiveFontSize / FontSize;
+				FontSize = AdaptiveFontSize;
+			}
+
+			if (FontScale != 1f)
+			{
+				FontSize = (int)(FontSize * FontScale);
+				LineHeight = (int)(LineHeight * FontScale);
+			}
+
+			if (FontSize < 8)
+				FontSize = 8;
+			if (LineHeight < FontSize)
+				LineHeight = FontSize;
+
+			ClearFont();
+			RefreshDisplayConfig();
+		}
+
 		static readonly Dictionary<string, Dictionary<FontStyle, Font>> fontDic = new Dictionary<string, Dictionary<FontStyle, Font>>();
 		public static Font Font { get { return GetFont(null, FontStyle.Regular); } }
 
@@ -468,8 +502,8 @@ namespace MinorShift.Emuera
 					RelativePath = dir.Substring(rootdir.Length);//前方が検索ルートパスと一致するならその部分を切り取る
 				//if (!RelativePath.EndsWith("\\") && !RelativePath.EndsWith("/"))
 				//	RelativePath += "\\";//末尾が\又は/で終わるように。後でFile名を直接加算できるようにしておく
-				if (!RelativePath.EndsWith("\\") && !RelativePath.EndsWith(Path.DirectorySeparatorChar.ToString()))
-					RelativePath += Path.DirectorySeparatorChar;
+				if (!RelativePath.EndsWith("\\") && !RelativePath.EndsWith("/"))
+					RelativePath += "\\";
 			}
 			//filepathsは完全パスである
 			//string[] filepaths = Directory.GetFiles(dir, pattern, SearchOption.TopDirectoryOnly);
@@ -479,7 +513,7 @@ namespace MinorShift.Emuera
 				Array.Sort(filepaths, ignoreCaseComparer);
 			for (int i = 0; i < filepaths.Length; i++)
 				if (Path.GetExtension(filepaths[i]).Length <= 4)//".erb"や".csv"であること。放置すると".erb*"等を拾う。
-					retList.Add(new KeyValuePair<string, string>(RelativePath + Path.GetFileName(filepaths[i]), filepaths[i]));
+					retList.Add(new KeyValuePair<string, string>((RelativePath + Path.GetFileName(filepaths[i])).Replace('/', '\\'), filepaths[i]));
 			return retList;
 		}
 		

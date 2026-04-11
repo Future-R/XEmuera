@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -74,6 +75,17 @@ namespace XEmuera.Views
 			GameItemListView.SelectedItem = null;
 
 			GameUtils.StartEmuera(item.Path);
+		}
+
+		private async void GameItemViewCell_LongPressed(object sender, EventArgs e)
+		{
+			if (!(sender is GameItemViewCell cell) || !(cell.BindingContext is GameItemModel item))
+				return;
+
+			GameItemListView.SelectedItem = null;
+
+			string configPath = Path.Combine(item.Path, "emuera.config");
+			await Navigation.PushAsync(new ConfigFileEditorPage(item.Name, configPath));
 		}
 	}
 }

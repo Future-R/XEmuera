@@ -45,6 +45,8 @@ namespace MinorShift.Emuera.GameProc.Function
 		WAIT,//改行待ち。
 		INPUT,//整数入力。入力はRESULTへ。
 		INPUTS,//文字列入力。入力はRESULTSへ。
+		BINPUT,
+		BINPUTS,
 		TINPUT,
 		TINPUTS,
 		TWAIT,
@@ -52,6 +54,8 @@ namespace MinorShift.Emuera.GameProc.Function
 		FORCEWAIT,//スキップで省略できないWAIT、強制TWAITと違い、スキップを打ち切る
 		ONEINPUT,
 		ONEINPUTS,
+		ONEBINPUT,
+		ONEBINPUTS,
 		TONEINPUT,
 		TONEINPUTS,
 		AWAIT,//入力不可 DoEvents
@@ -371,6 +375,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		FORCE_QUIT_AND_RESTART,
 		FORCE_BEGIN,
 		INPUTANY,
+		SKIPLOG,
 		#endregion
 	}
 }

@@ -243,6 +243,10 @@ namespace MinorShift.Emuera.GameData.Function
 				try
 				{
 					files = Directory.EnumerateFiles(dir, pattern, option).ToArray();
+					for (int i = 0; i < files.Length; i++)
+					{
+						files[i] = Path.GetRelativePath(Program.ExeDir, files[i]).Replace('/', '\\');
+					}
 				}
 				catch
 				{
@@ -4971,6 +4975,33 @@ namespace MinorShift.Emuera.GameData.Function
 				if (dispLines == null)
 					return "";
 				return HtmlManager.DisplayLine2Html(dispLines, false);
+			}
+		}
+
+		private sealed class GetDisplayLineMethod : FunctionMethod
+		{
+			public GetDisplayLineMethod()
+			{
+				ReturnType = typeof(string);
+				argumentTypeArrayEx = new ArgTypeList[] {
+					new ArgTypeList{ ArgTypes = { ArgType.Int }},
+				};
+				CanRestructure = false;
+			}
+
+			public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
+			{
+				Int64 lineNo = arguments[0].GetIntValue(exm);
+				if (lineNo < 0)
+					return string.Empty;
+				ConsoleDisplayLine[] dispLines = exm.Console.GetDisplayLines(lineNo);
+				if (dispLines == null)
+					return string.Empty;
+
+				StringBuilder builder = new StringBuilder();
+				for (int i = 0; i < dispLines.Length; i++)
+					builder.Append(dispLines[i].ToString());
+				return builder.ToString();
 			}
 		}
 

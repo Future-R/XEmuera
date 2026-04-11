@@ -91,22 +91,33 @@ namespace XEmuera.Views
 				return null;
 
 			string resId = $"XEmuera.Resources.Images.{source}";
-			var stream = GameUtils.GetManifestResourceStream(resId);
+			using var stream = GameUtils.GetManifestResourceStream(resId);
 			if (stream == null)
 				return null;
 
+			byte[] imageBytes;
 			if (source.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
 			{
-				var picture = new SkiaSharp.Extended.Svg.SKSvg().Load(stream);
-				var image = SKImage.FromPicture(picture, new SKSizeI(200, 200));
+				var svg = new SkiaSharp.Extended.Svg.SKSvg();
+				var picture = svg.Load(stream);
+				if (picture == null)
+					return null;
 
-				stream = image.Encode().AsStream();
+				using var image = SKImage.FromPicture(picture, new SKSizeI(200, 200));
+				using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+				imageBytes = encoded.ToArray();
+			}
+			else
+			{
+				using var memory = new MemoryStream();
+				stream.CopyTo(memory);
+				imageBytes = memory.ToArray();
 			}
 
 			if (TintColor != Color.Transparent)
-				stream = DrawTintColor(stream, TintColor);
+				imageBytes = DrawTintColor(imageBytes, TintColor);
 
-			return ImageSource.FromStream(() => stream);
+			return ImageSource.FromStream(() => new MemoryStream(imageBytes, writable: false));
 		}
 
 		private static void RefreshTintColor(BindableObject bindable, object oldvalue, object newvalue)
@@ -116,10 +127,11 @@ namespace XEmuera.Views
 			button.ToggleImageSource(true);
 		}
 
-		private static Stream DrawTintColor(Stream stream, Color tintColor)
+		private static byte[] DrawTintColor(byte[] imageBytes, Color tintColor)
 		{
-			var bitmap = SKBitmap.Decode(stream);
-			var image = SKImage.FromBitmap(bitmap);
+			using var input = new MemoryStream(imageBytes, writable: false);
+			using var bitmap = SKBitmap.Decode(input);
+			using var image = SKImage.FromBitmap(bitmap);
 
 			using SKPaint paint = new SKPaint
 			{
@@ -132,8 +144,8 @@ namespace XEmuera.Views
 				canvas.DrawImage(image, SKPoint.Empty, paint);
 			}
 
-			var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
-			return data.AsStream();
+			using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+			return data.ToArray();
 		}
 	}
 }

@@ -362,9 +362,9 @@ namespace MinorShift.Emuera.GameView
 					return selectingButton.Inputs;
 				if (state != ConsoleState.WaitInput)
 					return null;
-				if (inputReq.InputType == InputType.IntValue && (selectingButton.IsInteger))
+				if ((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.IntButton) && (selectingButton.IsInteger))
 					return selectingButton.Input.ToString();
-				if (inputReq.InputType == InputType.StrValue)
+				if (inputReq.InputType == InputType.StrValue || inputReq.InputType == InputType.StrButton)
 					return selectingButton.Inputs;
                 #region EE_INPUTANY
                 if (inputReq.InputType == InputType.AnyValue && (selectingButton.IsInteger))
@@ -374,6 +374,62 @@ namespace MinorShift.Emuera.GameView
                 #endregion
                 return null;
 			}
+		}
+
+		internal bool HasCurrentInputButtons(bool integerOnly)
+		{
+			for (int lineIndex = displayLineList.Count - 1; lineIndex >= 0; lineIndex--)
+			{
+				ConsoleDisplayLine line = displayLineList[lineIndex];
+				foreach (ConsoleButtonString button in line.Buttons)
+				{
+					if (button.Generation != 0 && button.Generation != lastButtonGeneration)
+						return false;
+					if (!button.IsButton)
+						continue;
+					if (integerOnly && !button.IsInteger)
+						continue;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private bool HasMatchingCurrentButton(long inputValue)
+		{
+			for (int lineIndex = displayLineList.Count - 1; lineIndex >= 0; lineIndex--)
+			{
+				ConsoleDisplayLine line = displayLineList[lineIndex];
+				foreach (ConsoleButtonString button in line.Buttons)
+				{
+					if (button.Generation != 0 && button.Generation != lastButtonGeneration)
+						return false;
+					if (button.IsButton && button.IsInteger && button.Input == inputValue)
+						return true;
+				}
+			}
+
+			return false;
+		}
+
+		private bool HasMatchingCurrentButton(string inputValue)
+		{
+			for (int lineIndex = displayLineList.Count - 1; lineIndex >= 0; lineIndex--)
+			{
+				ConsoleDisplayLine line = displayLineList[lineIndex];
+				foreach (ConsoleButtonString button in line.Buttons)
+				{
+					if (button.Generation != 0 && button.Generation != lastButtonGeneration)
+						return false;
+					if (!button.IsButton)
+						continue;
+					if ((button.IsInteger && button.Input.ToString() == inputValue) || button.Inputs == inputValue)
+						return true;
+				}
+			}
+
+			return false;
 		}
 
 		public void Initialize()
@@ -473,23 +529,27 @@ namespace MinorShift.Emuera.GameView
                 updatedGeneration = false;
             lastInputLine = emuera.getCurrentLine;
 			//古い選択肢を選択できないように。INPUTで使った選択肢をINPUTSには流用できないように。
-			if (inputReq.InputType == InputType.IntValue)
+			switch (inputReq.InputType)
 			{
-				if (lastButtonGeneration == newButtonGeneration)
-					unchecked { newButtonGeneration++; }
-				else if (!lastButtonIsInput)
-					lastButtonGeneration = newButtonGeneration;
-				lastButtonIsInput = true;
-			}
-            #region EE_INPUTANY
-            if (inputReq.InputType == InputType.StrValue || inputReq.InputType == InputType.AnyValue)
-			#endregion
-			{
-				if (lastButtonGeneration == newButtonGeneration)
-					unchecked { newButtonGeneration++; }
-				else if (lastButtonIsInput)
-					lastButtonGeneration = newButtonGeneration;
-				lastButtonIsInput = false;
+				case InputType.IntValue:
+				case InputType.IntButton:
+					if (lastButtonGeneration == newButtonGeneration)
+						unchecked { newButtonGeneration++; }
+					else if (!lastButtonIsInput)
+						lastButtonGeneration = newButtonGeneration;
+					lastButtonIsInput = true;
+					break;
+				case InputType.StrValue:
+				case InputType.StrButton:
+                #region EE_INPUTANY
+				case InputType.AnyValue:
+                #endregion
+					if (lastButtonGeneration == newButtonGeneration)
+						unchecked { newButtonGeneration++; }
+					else if (lastButtonIsInput)
+						lastButtonGeneration = newButtonGeneration;
+					lastButtonIsInput = false;
+					break;
 			}
 		}
 
@@ -821,12 +881,33 @@ namespace MinorShift.Emuera.GameView
 						else
 							emuera.InputInteger(inputValue);
 						break;
+					case InputType.IntButton:
+						if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
+						{
+							inputValue = inputReq.DefIntValue;
+							str = inputValue.ToString();
+						}
+						else if (!Int64.TryParse(str, out inputValue))
+							return false;
+						if (!HasMatchingCurrentButton(inputValue))
+							return false;
+						emuera.InputInteger(inputValue);
+						break;
 					case InputType.StrValue:
 						if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
 							str = inputReq.DefStrValue;
 						//空入力と時間切れ
 						if (str == null)
 							str = "";
+						emuera.InputString(str);
+						break;
+					case InputType.StrButton:
+						if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
+							str = inputReq.DefStrValue;
+						if (str == null)
+							str = "";
+						if (!HasMatchingCurrentButton(str))
+							return false;
 						emuera.InputString(str);
 						break;
                     #region EE_INPUTANY
@@ -1927,7 +2008,7 @@ namespace MinorShift.Emuera.GameView
 				canSelect = false;
 			else if (!pointing.IsButton)
 				canSelect = false;
-			else if ((state == ConsoleState.WaitInput && inputReq.InputType == InputType.IntValue) && (!pointing.IsInteger))
+			else if ((state == ConsoleState.WaitInput && (inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.IntButton)) && (!pointing.IsInteger))
 				canSelect = false;
 		end:
 			if (canSelect)
@@ -2177,7 +2258,7 @@ namespace MinorShift.Emuera.GameView
 				return false;
 			if (button.Generation != lastButtonGeneration)
 				return false;
-			if (state == ConsoleState.WaitInput && inputReq != null && inputReq.InputType == InputType.IntValue && !button.IsInteger)
+			if (state == ConsoleState.WaitInput && inputReq != null && (inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.IntButton) && !button.IsInteger)
 				return false;
 			return true;
 		}

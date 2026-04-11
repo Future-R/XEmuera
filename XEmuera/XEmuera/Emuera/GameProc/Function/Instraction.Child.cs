@@ -1833,7 +1833,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
         #region EE_INPUTANY
-		private sealed class INPUTANY_Instruction : AbstractInstruction
+        private sealed class INPUTANY_Instruction : AbstractInstruction
         {
 			public INPUTANY_Instruction()
             {
@@ -1850,6 +1850,169 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
         #endregion
+
+		private static bool HasVisibleButtonsForBinput(EmueraConsole console, bool integerOnly)
+		{
+			return console.HasCurrentInputButtons(integerOnly);
+		}
+
+		private sealed class BINPUT_Instruction : AbstractInstruction
+		{
+			public BINPUT_Instruction()
+			{
+				ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_INPUT);
+				flag = IS_PRINT | IS_INPUT;
+			}
+
+			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+			{
+				if (!exm.Console.EmptyLine)
+					exm.Console.NewLine();
+				exm.Console.RefreshStrings(true);
+
+				SpInputsArgument arg = (SpInputsArgument)func.Argument;
+				InputRequest req = new InputRequest
+				{
+					InputType = InputType.IntButton
+				};
+				if (arg.Def != null)
+				{
+					req.HasDefValue = true;
+					req.DefIntValue = arg.Def.GetIntValue(exm);
+				}
+				if (arg.Mouse != null)
+					req.MouseInput = arg.Mouse.GetIntValue(exm) != 0;
+
+				if (!HasVisibleButtonsForBinput(exm.Console, true))
+				{
+					if (arg.Def == null)
+						throw new CodeEE("BINPUT requires at least one visible integer button");
+					GlobalStatic.VEvaluator.RESULT = arg.Def.GetIntValue(exm);
+					return;
+				}
+
+				exm.Console.WaitInput(req);
+			}
+		}
+
+		private sealed class BINPUTS_Instruction : AbstractInstruction
+		{
+			public BINPUTS_Instruction()
+			{
+				ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_INPUTS);
+				flag = IS_PRINT | IS_INPUT;
+			}
+
+			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+			{
+				if (!exm.Console.EmptyLine)
+					exm.Console.NewLine();
+				exm.Console.RefreshStrings(true);
+
+				SpInputsArgument arg = (SpInputsArgument)func.Argument;
+				InputRequest req = new InputRequest
+				{
+					InputType = InputType.StrButton
+				};
+				if (arg.Def != null)
+				{
+					req.HasDefValue = true;
+					req.DefStrValue = arg.Def.GetStrValue(exm);
+				}
+				if (arg.Mouse != null)
+					req.MouseInput = arg.Mouse.GetIntValue(exm) != 0;
+
+				if (!HasVisibleButtonsForBinput(exm.Console, false))
+				{
+					if (arg.Def == null)
+						throw new CodeEE("BINPUTS requires at least one visible button");
+					GlobalStatic.VEvaluator.RESULTS = arg.Def.GetStrValue(exm);
+					return;
+				}
+
+				exm.Console.WaitInput(req);
+			}
+		}
+
+		private sealed class ONEBINPUT_Instruction : AbstractInstruction
+		{
+			public ONEBINPUT_Instruction()
+			{
+				ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_INPUT);
+				flag = IS_PRINT | IS_INPUT;
+			}
+
+			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+			{
+				if (!exm.Console.EmptyLine)
+					exm.Console.NewLine();
+				exm.Console.RefreshStrings(true);
+
+				SpInputsArgument arg = (SpInputsArgument)func.Argument;
+				InputRequest req = new InputRequest
+				{
+					InputType = InputType.IntButton,
+					OneInput = true
+				};
+				if (arg.Def != null)
+				{
+					req.HasDefValue = true;
+					req.DefIntValue = arg.Def.GetIntValue(exm);
+				}
+				if (arg.Mouse != null)
+					req.MouseInput = arg.Mouse.GetIntValue(exm) != 0;
+
+				if (!HasVisibleButtonsForBinput(exm.Console, true))
+				{
+					if (arg.Def == null)
+						throw new CodeEE("ONEBINPUT requires at least one visible integer button");
+					GlobalStatic.VEvaluator.RESULT = arg.Def.GetIntValue(exm);
+					return;
+				}
+
+				exm.Console.WaitInput(req);
+			}
+		}
+
+		private sealed class ONEBINPUTS_Instruction : AbstractInstruction
+		{
+			public ONEBINPUTS_Instruction()
+			{
+				ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_INPUTS);
+				flag = IS_PRINT | IS_INPUT;
+			}
+
+			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+			{
+				if (!exm.Console.EmptyLine)
+					exm.Console.NewLine();
+				exm.Console.RefreshStrings(true);
+
+				SpInputsArgument arg = (SpInputsArgument)func.Argument;
+				InputRequest req = new InputRequest
+				{
+					InputType = InputType.StrButton,
+					OneInput = true
+				};
+				if (arg.Def != null)
+				{
+					req.HasDefValue = true;
+					req.DefStrValue = arg.Def.GetStrValue(exm);
+				}
+				if (arg.Mouse != null)
+					req.MouseInput = arg.Mouse.GetIntValue(exm) != 0;
+
+				if (!HasVisibleButtonsForBinput(exm.Console, false))
+				{
+					if (arg.Def == null)
+						throw new CodeEE("ONEBINPUTS requires at least one visible button");
+					GlobalStatic.VEvaluator.RESULTS = arg.Def.GetStrValue(exm);
+					return;
+				}
+
+				exm.Console.WaitInput(req);
+			}
+		}
 
 
         private sealed class AWAIT_Instruction : AbstractInstruction

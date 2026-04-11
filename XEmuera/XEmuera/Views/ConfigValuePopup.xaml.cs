@@ -73,6 +73,8 @@ namespace XEmuera.Views
 			{
 				ConfigModel.Enabled = ConfigToggle.IsToggled;
 				ConfigModel.UpdateValue();
+				if (ConfigModel.Code == ConfigCode.FontScale && GameUtils.IsEmueraPage && GlobalStatic.MainWindow != null)
+					GlobalStatic.MainWindow.ApplyRuntimeDisplayScale((float)ConfigModel.Value);
 				Close();
 			}
 			else
@@ -117,7 +119,7 @@ namespace XEmuera.Views
 				Slider valueSlider = new Slider
 				{
 					Maximum = 5f,
-					Minimum = 1f,
+					Minimum = 0.5f,
 					Value = f,
 					MaximumTrackColor = Color.LightGray,
 					MinimumTrackColor = Color.LightGray,

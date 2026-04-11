@@ -24,7 +24,16 @@
 					Value="3" />
 				<Setter
 					Property="Padding"
-					Value="6" />
+					Value="5" />
+				<Setter
+					Property="WidthRequest"
+					Value="34" />
+				<Setter
+					Property="HeightRequest"
+					Value="34" />
+				<Setter
+					Property="Aspect"
+					Value="AspectFit" />
 			</Style>
 
 			<Style
@@ -73,6 +82,35 @@
 					Property="CornerRadius"
 					Value="32" />
 			</Style>
+
+			<Style
+				x:Key="ToolActionButtonStyle"
+				TargetType="Button">
+				<Setter
+					Property="BackgroundColor"
+					Value="{Binding InvertMainColor}" />
+				<Setter
+					Property="TextColor"
+					Value="{Binding MainColor}" />
+				<Setter
+					Property="CornerRadius"
+					Value="3" />
+				<Setter
+					Property="Padding"
+					Value="0" />
+				<Setter
+					Property="WidthRequest"
+					Value="32" />
+				<Setter
+					Property="HeightRequest"
+					Value="32" />
+				<Setter
+					Property="FontAttributes"
+					Value="Bold" />
+				<Setter
+					Property="FontSize"
+					Value="10" />
+			</Style>
 		</ResourceDictionary>
 	</ContentPage.Resources>
 
@@ -100,10 +138,10 @@
 					InputTransparent="True"
 					CascadeInputTransparent="False"
 					Orientation="Horizontal"
-					HorizontalOptions="Fill"
-					HeightRequest="36"
-					Padding="0,10,20,10"
-					Spacing="16">
+					HorizontalOptions="FillAndExpand"
+					HeightRequest="48"
+					Padding="0,6,12,6"
+					Spacing="4">
 
 					<BoxView
 						InputTransparent="True"
@@ -128,7 +166,7 @@
 						x:Name="scroll_vertical_button"
 						Image="scroll_vertical.svg"
 						Style="{StaticResource TintImageButtonStyle}"
-						Padding="8"
+						Padding="6"
 						Toggled="scroll_vertical_button_Toggled"
 						IsToggled="False" />
 
@@ -147,11 +185,23 @@
 						Toggled="virtual_controller_button_Toggled"
 						IsToggled="True" />
 
+					<Button
+						x:Name="zoom_out_button"
+						Text="A-"
+						Style="{StaticResource ToolActionButtonStyle}"
+						Clicked="zoom_out_button_Clicked" />
+
+					<Button
+						x:Name="zoom_in_button"
+						Text="A+"
+						Style="{StaticResource ToolActionButtonStyle}"
+						Clicked="zoom_in_button_Clicked" />
+
                     <views:TintImageButton
 						x:Name="menu_show_button"
 						Image="menu_show.svg"
 						Style="{StaticResource TintImageButtonStyle}"
-						Padding="8"
+						Padding="6"
 						Clicked="ButtonVisibleGroup_Clicked" />
 
                     <views:TintImageButton

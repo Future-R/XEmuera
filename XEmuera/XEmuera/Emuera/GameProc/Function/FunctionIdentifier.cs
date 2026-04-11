@@ -189,6 +189,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			addFunction(FunctionCode.WAIT, new WAIT_Instruction(false));
 			addFunction(FunctionCode.INPUT, new INPUT_Instruction());
 			addFunction(FunctionCode.INPUTS, new INPUTS_Instruction());
+			addFunction(FunctionCode.BINPUT, new BINPUT_Instruction());
+			addFunction(FunctionCode.BINPUTS, new BINPUTS_Instruction());
 			addFunction(FunctionCode.TINPUT, new TINPUT_Instruction(false));
 			addFunction(FunctionCode.TINPUTS, new TINPUTS_Instruction(false));
 			addFunction(FunctionCode.TONEINPUT, new TINPUT_Instruction(true));
@@ -198,6 +200,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			addFunction(FunctionCode.FORCEWAIT, new WAIT_Instruction(true));
 			addFunction(FunctionCode.ONEINPUT, new ONEINPUT_Instruction());
 			addFunction(FunctionCode.ONEINPUTS, new ONEINPUTS_Instruction());
+			addFunction(FunctionCode.ONEBINPUT, new ONEBINPUT_Instruction());
+			addFunction(FunctionCode.ONEBINPUTS, new ONEBINPUTS_Instruction());
 			addFunction(FunctionCode.CLEARLINE, new CLEARLINE_Instruction());
 			addFunction(FunctionCode.REUSELASTLINE, new REUSELASTLINE_Instruction());
 
@@ -323,6 +327,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			addFunction(FunctionCode.ARRAYREMOVE, argb[FunctionArgType.SP_CONTROL_ARRAY], METHOD_SAFE | EXTENDED);
 			addFunction(FunctionCode.ARRAYSORT, argb[FunctionArgType.SP_SORTARRAY], METHOD_SAFE | EXTENDED);
 			addFunction(FunctionCode.ARRAYCOPY, argb[FunctionArgType.SP_COPY_ARRAY], METHOD_SAFE | EXTENDED);
+			addFunction(FunctionCode.SKIPLOG, argb[FunctionArgType.INT_EXPRESSION], METHOD_SAFE | EXTENDED);
 
 			addFunction(FunctionCode.JUMP, new CALL_Instruction(false, true, false, false));//関数に移動
 			addFunction(FunctionCode.CALL, new CALL_Instruction(false, false, false, false));//関数に移動。移動元を記憶し、RETURNで帰る。
