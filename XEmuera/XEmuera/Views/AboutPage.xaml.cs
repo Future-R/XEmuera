@@ -20,7 +20,7 @@ namespace XEmuera.Views
 
 		public string AppName { get; private set; } = "XEmuera-R";
 
-		public string Version { get; private set; } = "0.61";
+		public string Version { get; private set; } = "0.62";
 
 		public AboutPage()
 		{

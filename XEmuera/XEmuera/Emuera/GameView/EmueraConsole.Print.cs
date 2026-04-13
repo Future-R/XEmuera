@@ -572,20 +572,29 @@ namespace MinorShift.Emuera.GameView
 
 		public string getStBar(string barStr)
 		{
+			if (string.IsNullOrEmpty(barStr))
+				return string.Empty;
+
+			int targetWidth = Math.Max(0, Config.DrawableWidth);
+			if (targetWidth == 0)
+				return string.Empty;
+
 			StringBuilder bar = new StringBuilder();
 			bar.Append(barStr);
-			int width = 0;
+			int width = stringMeasure.GetDisplayLength(bar.ToString(), Config.Font);
 			Font font = Config.Font;
-			while (width < Config.DrawableWidth)
+			while (width < targetWidth)
 			{//境界を越えるまで一文字ずつ増やす
 				bar.Append(barStr);
 				width = stringMeasure.GetDisplayLength(bar.ToString(), font);
 			}
-			while (width > Config.DrawableWidth)
+			while (width > targetWidth && bar.Length > 0)
 			{//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
 				bar.Remove(bar.Length - 1, 1);
 				width = stringMeasure.GetDisplayLength(bar.ToString(), font);
 			}
+			if (width > targetWidth)
+				return string.Empty;
 			return bar.ToString();
 		}
 

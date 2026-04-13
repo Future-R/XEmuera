@@ -67,14 +67,21 @@ namespace XEmuera.Views
 			return true;
 		}
 
-		private void GameItemListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+		private void OpenGame(GameItemModel item)
 		{
-			if (!(GameItemListView.SelectedItem is GameItemModel item))
+			if (item == null)
 				return;
 
 			GameItemListView.SelectedItem = null;
-
 			GameUtils.StartEmuera(item.Path);
+		}
+
+		private void GameItemViewCell_TappedCell(object sender, EventArgs e)
+		{
+			if (!(sender is GameItemViewCell cell) || !(cell.BindingContext is GameItemModel item))
+				return;
+
+			OpenGame(item);
 		}
 
 		private async void GameItemViewCell_LongPressed(object sender, EventArgs e)

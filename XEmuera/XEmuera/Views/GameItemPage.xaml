@@ -10,12 +10,13 @@
 		RefreshControlColor="{StaticResource ZimaBlueColor}"
 		HasUnevenRows="True"
 		IsPullToRefreshEnabled="True"
-		ItemSelected="GameItemListView_ItemSelected"
 		Refreshing="ListView_Refreshing">
 
 		<ListView.ItemTemplate>
 			<DataTemplate>
-				<views:GameItemViewCell LongPressed="GameItemViewCell_LongPressed">
+				<views:GameItemViewCell
+					TappedCell="GameItemViewCell_TappedCell"
+					LongPressed="GameItemViewCell_LongPressed">
 					<StackLayout
 						Orientation="Horizontal"
 						Padding="10">
