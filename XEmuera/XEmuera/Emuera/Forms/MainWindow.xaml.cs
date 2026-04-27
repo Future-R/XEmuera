@@ -646,7 +646,19 @@ namespace MinorShift.Emuera
 
 		public void quickButton_Clicked(object sender, EventArgs e)
 		{
-			PressEnterKey(((View)sender).BindingContext as string);
+			if (console == null || console.IsInProcess)
+				return;
+
+			string inputs = ((View)sender).BindingContext as string;
+			if (inputs == null)
+				return;
+
+			ScrollBacklogToBottom();
+			changeTextbyMouse = console.IsWaintingOnePhrase;
+			richTextBox1.Text = inputs;
+			if (console.IsWaintingOnePhrase)
+				last_inputed = "";
+			PressEnterKey(false, true);
 		}
 
 		private void virtualLeftButton_Clicked(object sender, EventArgs e)
