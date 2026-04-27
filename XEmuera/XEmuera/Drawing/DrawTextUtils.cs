@@ -16,6 +16,8 @@ namespace XEmuera.Drawing
 
 		private static readonly List<FontCache> EnabledFontCaches = new List<FontCache>();
 
+		private static readonly object TextLayoutLock = new object();
+
 		private static SKPaint Paint;
 
 		private static char[] CharList;
@@ -32,50 +34,56 @@ namespace XEmuera.Drawing
 
 		public static void Load()
 		{
-			for (int i = FontCaches.Count - 1; i >= 0; i--)
+			lock (TextLayoutLock)
 			{
-				if (!FontModel.UserList.Contains(FontCaches[i].FontModel))
-					FontCaches.RemoveAt(i);
-			}
-
-			foreach (var fontModel in FontModel.UserList)
-			{
-				if (FontCaches.Any(item => item.FontModel == fontModel))
-					continue;
-				FontCaches.Add(new FontCache
+				for (int i = FontCaches.Count - 1; i >= 0; i--)
 				{
-					FontModel = fontModel
-				});
-			}
+					if (!FontModel.UserList.Contains(FontCaches[i].FontModel))
+						FontCaches.RemoveAt(i);
+				}
 
-			EnabledFontCaches.Clear();
-			for (int i = 0; i < FontModel.UserList.Count; i++)
-			{
-				var fontModel = FontModel.UserList[i];
-				var fontCache = FontCaches.FirstOrDefault(item => item.FontModel == fontModel);
+				foreach (var fontModel in FontModel.UserList)
+				{
+					if (FontCaches.Any(item => item.FontModel == fontModel))
+						continue;
+					FontCaches.Add(new FontCache
+					{
+						FontModel = fontModel
+					});
+				}
 
-				int index = FontCaches.IndexOf(fontCache);
-				if (index != i)
-					FontCaches.Move(index, i);
+				EnabledFontCaches.Clear();
+				for (int i = 0; i < FontModel.UserList.Count; i++)
+				{
+					var fontModel = FontModel.UserList[i];
+					var fontCache = FontCaches.FirstOrDefault(item => item.FontModel == fontModel);
 
-				if (fontModel.Enabled)
-					EnabledFontCaches.Add(fontCache);
+					int index = FontCaches.IndexOf(fontCache);
+					if (index != i)
+						FontCaches.Move(index, i);
+
+					if (fontModel.Enabled)
+						EnabledFontCaches.Add(fontCache);
+				}
 			}
 		}
 
 		public static void Reset()
 		{
-			foreach (var fontCache in FontCaches)
-				fontCache.Clear();
-
-			if (Paint != null)
-				Paint.Dispose();
-			Paint = new SKPaint
+			lock (TextLayoutLock)
 			{
-				StrokeWidth = 2,
-				IsAntialias = Config.TextAntialias,
-				FilterQuality = Config.TextFilterQuality
-			};
+				foreach (var fontCache in FontCaches)
+					fontCache.Clear();
+
+				if (Paint != null)
+					Paint.Dispose();
+				Paint = new SKPaint
+				{
+					StrokeWidth = 2,
+					IsAntialias = Config.TextAntialias,
+					FilterQuality = Config.TextFilterQuality
+				};
+			}
 		}
 
 		private static void EnsurePaint()
@@ -166,7 +174,8 @@ namespace XEmuera.Drawing
 
 		public static float MeasureText(string text, Font font)
 		{
-			return PrepareTextLayout(text, font, out float totalAdvance) ? totalAdvance : 0;
+			lock (TextLayoutLock)
+				return PrepareTextLayout(text, font, out float totalAdvance) ? totalAdvance : 0;
 		}
 
 		public static void DrawText(SKCanvas canvas, string text, Font font, RectangleF rect, Color color)
@@ -179,33 +188,36 @@ namespace XEmuera.Drawing
 			if (string.IsNullOrEmpty(text))
 				return;
 
-			if (!PrepareTextLayout(text, font, out _))
-				return;
-
-			Paint.Color = DisplayUtils.ToSKColor(color);
-
-			bool drawStrikeout = font.Style.HasFlag(FontStyle.Strikeout);
-			bool drawUnderline = font.Style.HasFlag(FontStyle.Underline);
-			float Strikeout = drawStrikeout ? (Paint.FontMetrics.StrikeoutPosition ?? 0) : 0;
-			float Underline = drawUnderline ? (Paint.FontMetrics.UnderlinePosition ?? 0) : 0;
-
-			TextUnit unit;
-			for (int i = 0; i < TextUnits.Length; i++)
+			lock (TextLayoutLock)
 			{
-				if (TextUnits[i] == null)
-					continue;
+				if (!PrepareTextLayout(text, font, out _))
+					return;
 
-				unit = TextUnits[i];
-				Paint.Typeface = unit.FontModel.Typeface;
+				Paint.Color = DisplayUtils.ToSKColor(color);
 
-				if (drawStrikeout)
-					canvas.DrawLine(x, y + Strikeout, x + unit.Advance, y + Strikeout, Paint);
-				if (drawUnderline)
-					canvas.DrawLine(x, y + Underline, x + unit.Advance, y + Underline, Paint);
+				bool drawStrikeout = font.Style.HasFlag(FontStyle.Strikeout);
+				bool drawUnderline = font.Style.HasFlag(FontStyle.Underline);
+				float Strikeout = drawStrikeout ? (Paint.FontMetrics.StrikeoutPosition ?? 0) : 0;
+				float Underline = drawUnderline ? (Paint.FontMetrics.UnderlinePosition ?? 0) : 0;
 
-				canvas.DrawText(unit.Text, x, y, Paint);
+				TextUnit unit;
+				for (int i = 0; i < TextUnits.Length; i++)
+				{
+					if (TextUnits[i] == null)
+						continue;
 
-				x += unit.Advance;
+					unit = TextUnits[i];
+					Paint.Typeface = unit.FontModel.Typeface;
+
+					if (drawStrikeout)
+						canvas.DrawLine(x, y + Strikeout, x + unit.Advance, y + Strikeout, Paint);
+					if (drawUnderline)
+						canvas.DrawLine(x, y + Underline, x + unit.Advance, y + Underline, Paint);
+
+					canvas.DrawText(unit.Text, x, y, Paint);
+
+					x += unit.Advance;
+				}
 			}
 		}
 
@@ -239,8 +251,9 @@ namespace XEmuera.Drawing
 				Paint.Typeface = FontModel.Typeface;
 				var glyphs = Paint.GetGlyphs(CharList);
 				var glyphWidths = Paint.GetGlyphWidths(CharList);
+				int glyphCount = Math.Min(CharList.Length, Math.Min(glyphs.Length, glyphWidths.Length));
 
-				for (int i = 0; i < glyphs.Length; i++)
+				for (int i = 0; i < glyphCount; i++)
 				{
 					Char = CharList[i];
 					if (Char == char.MinValue)
